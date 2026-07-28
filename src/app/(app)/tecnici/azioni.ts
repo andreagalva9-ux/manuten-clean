@@ -158,6 +158,63 @@ export async function impostaAttivo(
   return { successo: attivo ? "Utente attivato." : "Utente disattivato." };
 }
 
+/**
+ * Elimina l'account su Supabase Auth (non solo il profilo locale): serve a
+ * liberare l'email, per esempio quando un invito non è mai stato usato e va
+ * rimandato. Rifiutata se l'utente ha già fogli di lavoro associati, per non
+ * lasciare riferimenti orfani nell'archivio.
+ */
+export async function eliminaUtente(
+  _stato: StatoTecnico,
+  formData: FormData,
+): Promise<StatoTecnico> {
+  const ufficio = await richiediUfficio();
+  const id = String(formData.get("id") ?? "");
+
+  if (!id) return { errore: "Utente non identificato." };
+  if (id === ufficio.id) return { errore: "Non puoi eliminare te stesso." };
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      errore:
+        "Eliminazione non disponibile: manca la chiave service_role nelle variabili d'ambiente.",
+    };
+  }
+
+  const supabase = await createClient();
+  const [{ count: compilati, error: erroreCompilati }, { count: assegnati, error: erroreAssegnati }] =
+    await Promise.all([
+      supabase
+        .from("interventi")
+        .select("id", { count: "exact", head: true })
+        .eq("compilato_da", id),
+      supabase
+        .from("interventi")
+        .select("id", { count: "exact", head: true })
+        .contains("tecnici_ids", [id]),
+    ]);
+
+  if (erroreCompilati || erroreAssegnati) {
+    return { errore: messaggioErrore(erroreCompilati ?? erroreAssegnati) };
+  }
+  if ((compilati ?? 0) + (assegnati ?? 0) > 0) {
+    return {
+      errore:
+        'Questo utente ha già fogli di lavoro associati: non può essere eliminato definitivamente. Usa "Disattiva" per revocargli l\'accesso.',
+    };
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) return { errore: messaggioErroreAuth(error) };
+
+  revalidatePath("/tecnici");
+  revalidatePath("/nuovo");
+  return {
+    successo: "Utente eliminato: puoi invitarlo di nuovo con la stessa email.",
+  };
+}
+
 export async function cambiaRuolo(
   _stato: StatoTecnico,
   formData: FormData,

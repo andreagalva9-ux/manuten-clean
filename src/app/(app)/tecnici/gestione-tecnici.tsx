@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import {
   cambiaRuolo,
+  eliminaUtente,
   impostaAttivo,
   invitaUtente,
   type StatoTecnico,
@@ -175,6 +176,11 @@ function RigaUtente({
     cambiaRuolo,
     {},
   );
+  const [statoElimina, azioneElimina] = useActionState<StatoTecnico, FormData>(
+    eliminaUtente,
+    {},
+  );
+  const [confermaElimina, setConfermaElimina] = useState(false);
 
   return (
     <li className={`scheda p-4 ${utente.attivo ? "" : "opacity-70"}`}>
@@ -206,6 +212,10 @@ function RigaUtente({
 
         {statoAttivo.errore && <Avviso>{statoAttivo.errore}</Avviso>}
         {statoRuolo.errore && <Avviso>{statoRuolo.errore}</Avviso>}
+        {statoElimina.errore && <Avviso>{statoElimina.errore}</Avviso>}
+        {statoElimina.successo && (
+          <Avviso tipo="successo">{statoElimina.successo}</Avviso>
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
           <form action={azioneRuolo} className="flex items-center gap-2">
@@ -236,6 +246,35 @@ function RigaUtente({
               {utente.attivo ? "Disattiva" : "Attiva"}
             </BottoneInvio>
           </form>
+
+          {!corrente &&
+            (confermaElimina ? (
+              <form
+                action={azioneElimina}
+                className="flex items-center gap-2"
+              >
+                <input type="hidden" name="id" value={utente.id} />
+                <span className="text-sm text-slate-600">Confermi?</span>
+                <BottoneInvio variante="pericolo" inCorso="Eliminazione…">
+                  Sì, elimina
+                </BottoneInvio>
+                <Bottone
+                  type="button"
+                  variante="secondario"
+                  onClick={() => setConfermaElimina(false)}
+                >
+                  Annulla
+                </Bottone>
+              </form>
+            ) : (
+              <Bottone
+                type="button"
+                variante="secondario"
+                onClick={() => setConfermaElimina(true)}
+              >
+                Elimina
+              </Bottone>
+            ))}
         </div>
       </div>
     </li>
