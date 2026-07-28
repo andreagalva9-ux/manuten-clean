@@ -6,6 +6,12 @@ export const metadata: Metadata = {
   title: "Fogli di lavoro · Manuten & Clean",
   description:
     "Compilazione e archivio digitale dei fogli di lavoro di Manuten & Clean.",
+  applicationName: "Fogli di lavoro",
+  appleWebApp: {
+    capable: true,
+    title: "Fogli di lavoro",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
