@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  /* Petrolio/teal del logo aziendale (estratto dal modulo cartaceo). */
+  --color-brand-50: #eaf6f5;
+  --color-brand-100: #ceebe8;
+  --color-brand-200: #9cd6d1;
+  --color-brand-300: #66beb7;
+  --color-brand-400: #33a29a;
+  --color-brand-500: #0f8880;
+  --color-brand-600: #087972;
+  --color-brand-700: #086660;
+  --color-brand-800: #06504b;
+  --color-brand-900: #043a37;
+
+  /* Verde del logo (usato per l'accento "&" e piccoli tocchi). */
+  --color-verde-400: #9acb6e;
+  --color-verde-500: #7cb552;
+  --color-verde-600: #649943;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-slate-100 text-slate-900 antialiased;
+  font-family: var(--font-sans);
+}
+
+/* Evita lo zoom automatico di iOS quando il tecnico tocca un campo. */
+input,
+select,
+textarea {
+  font-size: max(16px, 1rem);
+}
+
+@utility campo {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900
+         shadow-sm outline-none transition
+         placeholder:text-slate-400
+         focus:border-brand-500 focus:ring-2 focus:ring-brand-200
+         disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500;
+}
+
+@utility etichetta {
+  @apply mb-1.5 block text-sm font-medium text-slate-700;
+}
+
+@utility scheda {
+  @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+}
