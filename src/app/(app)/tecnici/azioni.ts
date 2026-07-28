@@ -25,7 +25,9 @@ function urlRedirect() {
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : undefined);
-  return base ? `${base}/login` : undefined;
+  // Il link dell'email porta allo scambio del codice PKCE, che stabilisce la
+  // sessione prima di mandare l'utente a impostare la propria password.
+  return base ? `${base}/auth/callback?next=/imposta-password` : undefined;
 }
 
 /**
