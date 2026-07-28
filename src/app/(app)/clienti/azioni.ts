@@ -12,6 +12,12 @@ function leggiCampi(formData: FormData) {
   return {
     nome: String(formData.get("nome") ?? "").trim(),
     indirizzo: String(formData.get("indirizzo") ?? "").trim() || null,
+    citta: String(formData.get("citta") ?? "").trim() || null,
+    cap: String(formData.get("cap") ?? "").trim() || null,
+    provincia: String(formData.get("provincia") ?? "").trim() || null,
+    piva: String(formData.get("piva") ?? "").trim() || null,
+    telefono: String(formData.get("telefono") ?? "").trim() || null,
+    email: String(formData.get("email") ?? "").trim() || null,
     note: String(formData.get("note") ?? "").trim() || null,
   };
 }

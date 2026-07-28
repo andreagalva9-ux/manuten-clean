@@ -135,7 +135,103 @@ function CampiCliente({ cliente }: { cliente?: Cliente }) {
           name="indirizzo"
           defaultValue={cliente?.indirizzo ?? ""}
           className="campo"
-          placeholder="Via, numero civico, città"
+          placeholder="Via e numero civico"
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label
+            className="etichetta"
+            htmlFor={`citta-${cliente?.id ?? "nuovo"}`}
+          >
+            Città
+          </label>
+          <input
+            id={`citta-${cliente?.id ?? "nuovo"}`}
+            name="citta"
+            defaultValue={cliente?.citta ?? ""}
+            className="campo"
+            placeholder="Es. Como"
+          />
+        </div>
+        <div>
+          <label className="etichetta" htmlFor={`cap-${cliente?.id ?? "nuovo"}`}>
+            CAP
+          </label>
+          <input
+            id={`cap-${cliente?.id ?? "nuovo"}`}
+            name="cap"
+            defaultValue={cliente?.cap ?? ""}
+            className="campo"
+            placeholder="22100"
+          />
+        </div>
+        <div>
+          <label
+            className="etichetta"
+            htmlFor={`provincia-${cliente?.id ?? "nuovo"}`}
+          >
+            Provincia
+          </label>
+          <input
+            id={`provincia-${cliente?.id ?? "nuovo"}`}
+            name="provincia"
+            defaultValue={cliente?.provincia ?? ""}
+            className="campo"
+            placeholder="CO"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label
+            className="etichetta"
+            htmlFor={`telefono-${cliente?.id ?? "nuovo"}`}
+          >
+            Telefono
+          </label>
+          <input
+            id={`telefono-${cliente?.id ?? "nuovo"}`}
+            name="telefono"
+            type="tel"
+            defaultValue={cliente?.telefono ?? ""}
+            className="campo"
+            placeholder="Es. 031 1234567"
+          />
+        </div>
+        <div>
+          <label
+            className="etichetta"
+            htmlFor={`email-${cliente?.id ?? "nuovo"}`}
+          >
+            Email
+          </label>
+          <input
+            id={`email-${cliente?.id ?? "nuovo"}`}
+            name="email"
+            type="email"
+            defaultValue={cliente?.email ?? ""}
+            className="campo"
+            placeholder="nome@esempio.it"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label
+          className="etichetta"
+          htmlFor={`piva-${cliente?.id ?? "nuovo"}`}
+        >
+          Partita IVA / Codice fiscale
+        </label>
+        <input
+          id={`piva-${cliente?.id ?? "nuovo"}`}
+          name="piva"
+          defaultValue={cliente?.piva ?? ""}
+          className="campo"
+          placeholder="Es. 03756330134"
         />
       </div>
 
@@ -197,8 +293,24 @@ function RigaCliente({ cliente }: { cliente: ClienteConConteggio }) {
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="font-semibold text-slate-900">{cliente.nome}</p>
-              {cliente.indirizzo && (
-                <p className="text-sm text-slate-500">{cliente.indirizzo}</p>
+              {(cliente.indirizzo || cliente.citta) && (
+                <p className="text-sm text-slate-500">
+                  {[
+                    cliente.indirizzo,
+                    [cliente.cap, cliente.citta, cliente.provincia]
+                      .filter(Boolean)
+                      .join(" "),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
+              {(cliente.telefono || cliente.email || cliente.piva) && (
+                <p className="text-sm text-slate-500">
+                  {[cliente.telefono, cliente.email, cliente.piva && `P.IVA ${cliente.piva}`]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
               )}
             </div>
             <div className="flex shrink-0 items-center gap-2">

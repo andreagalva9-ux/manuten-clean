@@ -14,28 +14,46 @@ export type Database = {
     Tables: {
       clients: {
         Row: {
+          cap: string | null
+          citta: string | null
           created_at: string
           deleted_at: string | null
+          email: string | null
           id: string
           indirizzo: string | null
           nome: string
           note: string | null
+          piva: string | null
+          provincia: string | null
+          telefono: string | null
         }
         Insert: {
+          cap?: string | null
+          citta?: string | null
           created_at?: string
           deleted_at?: string | null
+          email?: string | null
           id?: string
           indirizzo?: string | null
           nome: string
           note?: string | null
+          piva?: string | null
+          provincia?: string | null
+          telefono?: string | null
         }
         Update: {
+          cap?: string | null
+          citta?: string | null
           created_at?: string
           deleted_at?: string | null
+          email?: string | null
           id?: string
           indirizzo?: string | null
           nome?: string
           note?: string | null
+          piva?: string | null
+          provincia?: string | null
+          telefono?: string | null
         }
         Relationships: []
       }
