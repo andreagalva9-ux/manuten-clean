@@ -56,6 +56,13 @@ function vociPerRuolo(profilo: Profilo): Voce[] {
           <Icona d="M12 12a4 4 0 100-8 4 4 0 000 8zM5 21v-1a7 7 0 0114 0v1M19 8h4M21 6v4" />
         ),
       },
+      {
+        href: "/assegnazioni",
+        etichetta: "Assegnazioni",
+        icona: (
+          <Icona d="M9 12l2 2 4-4M7.5 3.5l-3 1.5v4l3 1.5 3-1.5v-4zM16.5 13.5l-3 1.5v4l3 1.5 3-1.5v-4z" />
+        ),
+      },
     );
   }
 

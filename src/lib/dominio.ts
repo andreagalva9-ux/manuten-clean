@@ -71,6 +71,7 @@ export type Ruolo = "ufficio" | "tecnico";
 export type Profilo = Tables<"profiles">;
 export type Cliente = Tables<"clients">;
 export type Intervento = Tables<"interventi">;
+export type Assegnazione = Tables<"assegnazioni">;
 
 export type InterventoCompleto = Intervento & {
   cliente: Pick<Cliente, "id" | "nome" | "indirizzo"> | null;

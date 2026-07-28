@@ -12,20 +12,24 @@ export default async function PaginaNuovo() {
   const profilo = await richiediProfilo();
   const supabase = await createClient();
 
-  const [{ data: clienti, error: erroreClienti }, { data: tecnici, error: erroreTecnici }] =
-    await Promise.all([
-      supabase
-        .from("clients")
-        .select("id, nome, indirizzo")
-        .is("deleted_at", null)
-        .order("nome"),
-      supabase
-        .from("profiles")
-        .select("id, nome")
-        .eq("ruolo", "tecnico")
-        .eq("attivo", true)
-        .order("nome"),
-    ]);
+  const [
+    { data: clienti, error: erroreClienti },
+    { data: tecnici, error: erroreTecnici },
+    { data: assegnazioni },
+  ] = await Promise.all([
+    supabase
+      .from("clients")
+      .select("id, nome, indirizzo")
+      .is("deleted_at", null)
+      .order("nome"),
+    supabase
+      .from("profiles")
+      .select("id, nome")
+      .eq("ruolo", "tecnico")
+      .eq("attivo", true)
+      .order("nome"),
+    supabase.from("assegnazioni").select("client_id, tecnico_id, tipo"),
+  ]);
 
   if (erroreClienti) {
     return (
@@ -69,6 +73,7 @@ export default async function PaginaNuovo() {
       <FormIntervento
         clienti={clienti}
         tecnici={tecnici ?? []}
+        assegnazioni={assegnazioni ?? []}
         profilo={profilo}
       />
     </div>

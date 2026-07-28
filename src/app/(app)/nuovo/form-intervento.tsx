@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 
 import {
   creaIntervento,
@@ -12,6 +12,7 @@ import {
   codiceCommessa,
   oggiISO,
   TIPI_COMMESSA,
+  type Assegnazione,
   type Cliente,
   type Profilo,
 } from "@/lib/dominio";
@@ -31,10 +32,12 @@ type Risultato = { chiave: string } & (
 export function FormIntervento({
   clienti,
   tecnici,
+  assegnazioni,
   profilo,
 }: {
   clienti: Pick<Cliente, "id" | "nome" | "indirizzo">[];
   tecnici: Pick<Profilo, "id" | "nome">[];
+  assegnazioni: Pick<Assegnazione, "client_id" | "tecnico_id" | "tipo">[];
   profilo: Profilo;
 }) {
   const [stato, azione] = useActionState<StatoIntervento, FormData>(
@@ -45,6 +48,21 @@ export function FormIntervento({
   const [clientId, setClientId] = useState("");
   const [tipo, setTipo] = useState("");
   const [risultato, setRisultato] = useState<Risultato | null>(null);
+
+  // Preselezione (non vincolante) dei tecnici in base alle assegnazioni: si
+  // preferisce un'assegnazione specifica per quel tipo, altrimenti quella
+  // generica ("tutti i tipi"). La chiave cliente+tipo viene usata come `key`
+  // di SelezioneTecnici così, cambiando cliente o tipo, la selezione riparte
+  // dal suggerimento invece di trascinarsi eventuali modifiche manuali fatte
+  // per una combinazione precedente.
+  const tecniciSuggeriti = useMemo(() => {
+    if (!clientId) return new Set<string>();
+    const perCliente = assegnazioni.filter((a) => a.client_id === clientId);
+    const specifiche = tipo ? perCliente.filter((a) => a.tipo === tipo) : [];
+    const generiche = perCliente.filter((a) => a.tipo === null);
+    const suggerite = specifiche.length > 0 ? specifiche : generiche;
+    return new Set(suggerite.map((a) => a.tecnico_id));
+  }, [clientId, tipo, assegnazioni]);
 
   // La coppia cliente+tipo identifica la richiesta in corso: confrontandola con
   // quella dell'ultima risposta si distingue "sto caricando" da "ho il dato",
@@ -253,7 +271,11 @@ export function FormIntervento({
         </div>
       </section>
 
-      <SelezioneTecnici tecnici={tecnici} />
+      <SelezioneTecnici
+        key={`${clientId}|${tipo}`}
+        tecnici={tecnici}
+        suggeriti={tecniciSuggeriti}
+      />
 
       <SezioneFirme />
 
@@ -346,9 +368,22 @@ function SezioneFirme() {
 
 function SelezioneTecnici({
   tecnici,
+  suggeriti,
 }: {
   tecnici: Pick<Profilo, "id" | "nome">[];
+  suggeriti: Set<string>;
 }) {
+  const [selezionati, setSelezionati] = useState(suggeriti);
+
+  function alternaTecnico(id: string) {
+    setSelezionati((precedente) => {
+      const nuovo = new Set(precedente);
+      if (nuovo.has(id)) nuovo.delete(id);
+      else nuovo.add(id);
+      return nuovo;
+    });
+  }
+
   if (tecnici.length === 0) {
     return (
       <section className="scheda p-4">
@@ -364,6 +399,10 @@ function SelezioneTecnici({
   return (
     <section className="scheda p-4">
       <p className="etichetta">Tecnici assegnati</p>
+      <p className="mb-2 text-xs text-slate-500">
+        Precompilato in base alle assegnazioni cliente → tecnico: puoi
+        correggerlo prima di salvare.
+      </p>
       <ul className="grid gap-2 sm:grid-cols-2">
         {tecnici.map((tecnico) => (
           <li key={tecnico.id}>
@@ -372,6 +411,8 @@ function SelezioneTecnici({
                 type="checkbox"
                 name="tecnici_ids"
                 value={tecnico.id}
+                checked={selezionati.has(tecnico.id)}
+                onChange={() => alternaTecnico(tecnico.id)}
                 className="h-5 w-5 rounded border-slate-300 accent-brand-700"
               />
               <span className="text-sm font-medium text-slate-800">
