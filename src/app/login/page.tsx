@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { FormLogin } from "@/app/login/form-login";
+import { GateInvito } from "@/app/login/gate-invito";
 import { Logo } from "@/components/logo";
 import { AZIENDA } from "@/lib/dominio";
 import { createClient } from "@/lib/supabase/server";
@@ -34,7 +35,9 @@ export default async function PaginaLogin({
             Compila e consulta i fogli di lavoro dal cantiere o dall&apos;ufficio.
           </p>
 
-          <FormLogin destinazione={destinazione} />
+          <GateInvito>
+            <FormLogin destinazione={destinazione} />
+          </GateInvito>
 
           {serveBootstrap && (
             <p className="mt-6 border-t border-slate-200 pt-4 text-sm text-slate-600">
