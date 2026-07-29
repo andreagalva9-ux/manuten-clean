@@ -208,6 +208,42 @@ export async function eliminaUtente(
   };
 }
 
+/**
+ * Reimposta la password di un utente esistente a una nuova password
+ * temporanea, da consegnare a mano: non dipende dall'invio di email, quindi
+ * funziona anche quando il servizio email non è configurato o ha raggiunto
+ * il limite di invii.
+ */
+export async function reimpostaPassword(
+  _stato: StatoTecnico,
+  formData: FormData,
+): Promise<StatoTecnico> {
+  await richiediUfficio();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { errore: "Utente non identificato." };
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      errore:
+        "Reimpostazione non disponibile: manca la chiave service_role nelle variabili d'ambiente.",
+    };
+  }
+
+  const passwordTemporanea = passwordCasuale();
+  const { error } = await admin.auth.admin.updateUserById(id, {
+    password: passwordTemporanea,
+  });
+
+  if (error) return { errore: messaggioErroreAuth(error) };
+
+  return {
+    successo:
+      "Password reimpostata. Consegna la nuova password temporanea al destinatario: dovrà cambiarla al primo accesso.",
+    passwordTemporanea,
+  };
+}
+
 export async function cambiaRuolo(
   _stato: StatoTecnico,
   formData: FormData,

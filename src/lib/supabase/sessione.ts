@@ -1,12 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PERCORSI_PUBBLICI = [
-  "/login",
-  "/registrazione",
-  "/recupera-password",
-  "/auth",
-];
+const PERCORSI_PUBBLICI = ["/login", "/registrazione", "/auth"];
 
 export async function aggiornaSessione(request: NextRequest) {
   let response = NextResponse.next({ request });

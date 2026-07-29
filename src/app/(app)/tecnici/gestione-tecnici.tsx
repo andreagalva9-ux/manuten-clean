@@ -7,6 +7,7 @@ import {
   eliminaUtente,
   impostaAttivo,
   invitaUtente,
+  reimpostaPassword,
   type StatoTecnico,
 } from "@/app/(app)/tecnici/azioni";
 import { Avviso, Bottone, BottoneInvio, Etichetta } from "@/components/ui";
@@ -77,17 +78,7 @@ function FormInvito({
       {stato.errore && <Avviso>{stato.errore}</Avviso>}
       {stato.successo && <Avviso tipo="successo">{stato.successo}</Avviso>}
       {stato.passwordTemporanea && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm font-medium text-amber-900">
-            Password temporanea
-          </p>
-          <p className="mt-1 font-mono text-base break-all text-amber-950 select-all">
-            {stato.passwordTemporanea}
-          </p>
-          <p className="mt-1 text-xs text-amber-800">
-            Visibile solo ora: copiala e consegnala al destinatario.
-          </p>
-        </div>
+        <PasswordTemporaneaBox password={stato.passwordTemporanea} />
       )}
 
       <div>
@@ -161,6 +152,20 @@ function FormInvito({
   );
 }
 
+function PasswordTemporaneaBox({ password }: { password: string }) {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+      <p className="text-sm font-medium text-amber-900">Password temporanea</p>
+      <p className="mt-1 font-mono text-base break-all text-amber-950 select-all">
+        {password}
+      </p>
+      <p className="mt-1 text-xs text-amber-800">
+        Visibile solo ora: copiala e consegnala al destinatario.
+      </p>
+    </div>
+  );
+}
+
 function RigaUtente({
   utente,
   corrente,
@@ -180,7 +185,12 @@ function RigaUtente({
     eliminaUtente,
     {},
   );
+  const [statoReset, azioneReset] = useActionState<StatoTecnico, FormData>(
+    reimpostaPassword,
+    {},
+  );
   const [confermaElimina, setConfermaElimina] = useState(false);
+  const [confermaReset, setConfermaReset] = useState(false);
 
   return (
     <li className={`scheda p-4 ${utente.attivo ? "" : "opacity-70"}`}>
@@ -216,6 +226,10 @@ function RigaUtente({
         {statoElimina.successo && (
           <Avviso tipo="successo">{statoElimina.successo}</Avviso>
         )}
+        {statoReset.errore && <Avviso>{statoReset.errore}</Avviso>}
+        {statoReset.passwordTemporanea && (
+          <PasswordTemporaneaBox password={statoReset.passwordTemporanea} />
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
           <form action={azioneRuolo} className="flex items-center gap-2">
@@ -246,6 +260,31 @@ function RigaUtente({
               {utente.attivo ? "Disattiva" : "Attiva"}
             </BottoneInvio>
           </form>
+
+          {confermaReset ? (
+            <form action={azioneReset} className="flex items-center gap-2">
+              <input type="hidden" name="id" value={utente.id} />
+              <span className="text-sm text-slate-600">Confermi?</span>
+              <BottoneInvio variante="secondario" inCorso="Reimpostazione…">
+                Sì, reimposta
+              </BottoneInvio>
+              <Bottone
+                type="button"
+                variante="secondario"
+                onClick={() => setConfermaReset(false)}
+              >
+                Annulla
+              </Bottone>
+            </form>
+          ) : (
+            <Bottone
+              type="button"
+              variante="secondario"
+              onClick={() => setConfermaReset(true)}
+            >
+              Reimposta password
+            </Bottone>
+          )}
 
           {!corrente &&
             (confermaElimina ? (
