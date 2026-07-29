@@ -1,13 +1,14 @@
 import { GestioneClienti } from "@/app/(app)/clienti/gestione-clienti";
 import { Avviso } from "@/components/ui";
-import { richiediUfficio } from "@/lib/auth";
+import { richiediVisibilitaCompleta } from "@/lib/auth";
+import { isUfficio } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Clienti · Manuten & Clean" };
 
 export default async function PaginaClienti() {
-  await richiediUfficio();
+  const profilo = await richiediVisibilitaCompleta();
   const supabase = await createClient();
 
   const [{ data: clienti, error }, { data: interventi, error: erroreConteggi }] =
@@ -41,6 +42,7 @@ export default async function PaginaClienti() {
           ...c,
           interventi: conteggi.get(c.id) ?? 0,
         }))}
+        soloLettura={!isUfficio(profilo)}
       />
     </div>
   );

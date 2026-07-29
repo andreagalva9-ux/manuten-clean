@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { richiediUfficio } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
+import { isRuolo } from "@/lib/dominio";
 import { messaggioErrore, messaggioErroreAuth } from "@/lib/errori";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { urlCallback } from "@/lib/url";
@@ -35,14 +36,15 @@ export async function invitaUtente(
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
-  const ruolo = String(formData.get("ruolo") ?? "tecnico");
+  const ruoloGrezzo = String(formData.get("ruolo") ?? "tecnico");
   const modalita = String(formData.get("modalita") ?? "invito");
 
   if (!nome) return { errore: "Il nome è obbligatorio." };
   if (!email) return { errore: "L'email è obbligatoria." };
-  if (ruolo !== "tecnico" && ruolo !== "ufficio") {
+  if (!isRuolo(ruoloGrezzo)) {
     return { errore: "Ruolo non valido." };
   }
+  const ruolo = ruoloGrezzo;
 
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -250,12 +252,13 @@ export async function cambiaRuolo(
 ): Promise<StatoTecnico> {
   const ufficio = await richiediUfficio();
   const id = String(formData.get("id") ?? "");
-  const ruolo = String(formData.get("ruolo") ?? "");
+  const ruoloGrezzo = String(formData.get("ruolo") ?? "");
 
   if (!id) return { errore: "Utente non identificato." };
-  if (ruolo !== "tecnico" && ruolo !== "ufficio") {
+  if (!isRuolo(ruoloGrezzo)) {
     return { errore: "Ruolo non valido." };
   }
+  const ruolo = ruoloGrezzo;
   if (id === ufficio.id && ruolo !== "ufficio") {
     return {
       errore:

@@ -23,10 +23,12 @@ export function GestioneAssegnazioni({
   clienti,
   tecnici,
   assegnazioni,
+  soloLettura = false,
 }: {
   clienti: ClienteBase[];
   tecnici: TecnicoBase[];
   assegnazioni: AssegnazioneRiga[];
+  soloLettura?: boolean;
 }) {
   const [filtro, setFiltro] = useState("");
   const filtroNormalizzato = filtro.trim().toLowerCase();
@@ -57,6 +59,7 @@ export function GestioneAssegnazioni({
             tecnici={tecnici}
             assegnazioni={assegnazioni.filter((a) => a.client_id === cliente.id)}
             nomeTecnico={nomeTecnico}
+            soloLettura={soloLettura}
           />
         ))}
       </ul>
@@ -75,11 +78,13 @@ function RigaCliente({
   tecnici,
   assegnazioni,
   nomeTecnico,
+  soloLettura,
 }: {
   cliente: ClienteBase;
   tecnici: TecnicoBase[];
   assegnazioni: AssegnazioneRiga[];
   nomeTecnico: (id: string) => string;
+  soloLettura: boolean;
 }) {
   const [aperto, setAperto] = useState(false);
 
@@ -114,12 +119,13 @@ function RigaCliente({
                   key={a.id}
                   assegnazione={a}
                   nomeTecnico={nomeTecnico(a.tecnico_id)}
+                  soloLettura={soloLettura}
                 />
               ))}
             </ul>
           )}
 
-          {tecnici.length > 0 ? (
+          {soloLettura ? null : tecnici.length > 0 ? (
             <FormAggiungi clientId={cliente.id} tecnici={tecnici} />
           ) : (
             <p className="text-sm text-slate-500">
@@ -135,33 +141,51 @@ function RigaCliente({
 function RigaAssegnazione({
   assegnazione,
   nomeTecnico,
+  soloLettura,
 }: {
   assegnazione: AssegnazioneRiga;
   nomeTecnico: string;
+  soloLettura: boolean;
 }) {
   const [stato, azione] = useActionState<StatoAssegnazione, FormData>(
     eliminaAssegnazione,
     {},
   );
 
+  const contenuto = (
+    <>
+      <span className="font-medium">{nomeTecnico}</span>
+      <span className="text-slate-400">·</span>
+      <span>{assegnazione.tipo ?? "Tutti i tipi"}</span>
+      {!soloLettura && (
+        <button
+          type="submit"
+          aria-label={`Rimuovi assegnazione di ${nomeTecnico}`}
+          className="ml-1 rounded-full p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+        >
+          ×
+        </button>
+      )}
+    </>
+  );
+
   return (
     <li>
-      <form action={azione}>
-        <input type="hidden" name="id" value={assegnazione.id} />
+      {soloLettura ? (
         <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 py-1 pr-1.5 pl-3 text-sm text-slate-700">
-          <span className="font-medium">{nomeTecnico}</span>
-          <span className="text-slate-400">·</span>
-          <span>{assegnazione.tipo ?? "Tutti i tipi"}</span>
-          <button
-            type="submit"
-            aria-label={`Rimuovi assegnazione di ${nomeTecnico}`}
-            className="ml-1 rounded-full p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-          >
-            ×
-          </button>
+          {contenuto}
         </span>
-      </form>
-      {stato.errore && <p className="mt-1 text-xs text-red-700">{stato.errore}</p>}
+      ) : (
+        <form action={azione}>
+          <input type="hidden" name="id" value={assegnazione.id} />
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 py-1 pr-1.5 pl-3 text-sm text-slate-700">
+            {contenuto}
+          </span>
+        </form>
+      )}
+      {stato.errore && (
+        <p className="mt-1 text-xs text-red-700">{stato.errore}</p>
+      )}
     </li>
   );
 }

@@ -1,13 +1,14 @@
 import { GestioneAssegnazioni } from "@/app/(app)/assegnazioni/gestione-assegnazioni";
 import { Avviso, StatoVuoto } from "@/components/ui";
-import { richiediUfficio } from "@/lib/auth";
+import { richiediVisibilitaCompleta } from "@/lib/auth";
+import { isUfficio } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Assegnazioni · Manuten & Clean" };
 
 export default async function PaginaAssegnazioni() {
-  await richiediUfficio();
+  const profilo = await richiediVisibilitaCompleta();
   const supabase = await createClient();
 
   const [
@@ -73,6 +74,7 @@ export default async function PaginaAssegnazioni() {
         clienti={clienti}
         tecnici={tecnici ?? []}
         assegnazioni={assegnazioni ?? []}
+        soloLettura={!isUfficio(profilo)}
       />
     </div>
   );

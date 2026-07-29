@@ -1,13 +1,14 @@
 import { GestioneTecnici } from "@/app/(app)/tecnici/gestione-tecnici";
 import { Avviso } from "@/components/ui";
-import { richiediUfficio } from "@/lib/auth";
+import { richiediVisibilitaCompleta } from "@/lib/auth";
+import { isUfficio } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Tecnici · Manuten & Clean" };
 
 export default async function PaginaTecnici() {
-  const profilo = await richiediUfficio();
+  const profilo = await richiediVisibilitaCompleta();
   const supabase = await createClient();
 
   const [{ data: utenti, error }, { data: interventi }] = await Promise.all([
@@ -31,6 +32,7 @@ export default async function PaginaTecnici() {
   return (
     <GestioneTecnici
       idCorrente={profilo.id}
+      soloLettura={!isUfficio(profilo)}
       invitoEmailDisponibile={Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)}
       utenti={(utenti ?? []).map((u) => ({
         ...u,

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { FormIntervento } from "@/app/(app)/nuovo/form-intervento";
 import { Avviso, StatoVuoto } from "@/components/ui";
 import { richiediProfilo } from "@/lib/auth";
+import { isSupervisore } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,6 +12,8 @@ export const metadata = { title: "Nuovo foglio · Manuten & Clean" };
 
 export default async function PaginaNuovo() {
   const profilo = await richiediProfilo();
+  // Chi è in sola supervisione non compila fogli, solo consultazione.
+  if (isSupervisore(profilo)) redirect("/archivio");
   const supabase = await createClient();
 
   const [

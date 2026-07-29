@@ -67,7 +67,14 @@ export const AZIENDA = {
   pec: "manutenclean2srl@sicurezzapostale.it",
 } as const;
 
-export type Ruolo = "ufficio" | "tecnico";
+export const RUOLI = ["ufficio", "tecnico", "supervisore"] as const;
+export type Ruolo = (typeof RUOLI)[number];
+
+export function isRuolo(valore: unknown): valore is Ruolo {
+  return (
+    typeof valore === "string" && (RUOLI as readonly string[]).includes(valore)
+  );
+}
 export type Profilo = Tables<"profiles">;
 export type Cliente = Tables<"clients">;
 export type Intervento = Tables<"interventi">;
@@ -80,6 +87,20 @@ export type InterventoCompleto = Intervento & {
 
 export function isUfficio(profilo: Pick<Profilo, "ruolo"> | null | undefined) {
   return profilo?.ruolo === "ufficio";
+}
+
+/** Sola lettura di tutto (titolare o suo backup): nessun diritto di scrittura. */
+export function isSupervisore(
+  profilo: Pick<Profilo, "ruolo"> | null | undefined,
+) {
+  return profilo?.ruolo === "supervisore";
+}
+
+/** Chi vede l'intero archivio e le pagine di gestione, in scrittura o sola lettura. */
+export function puoVedereTutto(
+  profilo: Pick<Profilo, "ruolo"> | null | undefined,
+) {
+  return isUfficio(profilo) || isSupervisore(profilo);
 }
 
 /** Il compilatore o l'ufficio possono archiviare il foglio. */

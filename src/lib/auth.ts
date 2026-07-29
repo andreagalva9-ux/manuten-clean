@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import type { Profilo } from "@/lib/dominio";
+import { puoVedereTutto, type Profilo } from "@/lib/dominio";
 import { createClient } from "@/lib/supabase/server";
 
 /** Profilo dell'utente loggato, o null se la sessione non è valida. */
@@ -27,14 +27,26 @@ export async function richiediProfilo(): Promise<Profilo> {
   return profilo;
 }
 
-/** Rotte riservate all'ufficio (Clienti, Tecnici). */
+/** Rotte riservate all'ufficio: qui si scrive (creare, modificare, eliminare). */
 export async function richiediUfficio(): Promise<Profilo> {
   const profilo = await richiediProfilo();
   if (profilo.ruolo !== "ufficio") redirect("/archivio");
   return profilo;
 }
 
+/**
+ * Rotte di sola visibilità (Clienti, Tecnici, Assegnazioni): ufficio e
+ * supervisore vi accedono entrambi, ma solo l'ufficio vede i pulsanti di
+ * modifica nella pagina (i relativi Server Action restano protetti da
+ * richiediUfficio, quindi il supervisore non può scrivere in ogni caso).
+ */
+export async function richiediVisibilitaCompleta(): Promise<Profilo> {
+  const profilo = await richiediProfilo();
+  if (!puoVedereTutto(profilo)) redirect("/nuovo");
+  return profilo;
+}
+
 /** Home di destinazione dopo il login, in base al ruolo. */
 export function homePerRuolo(ruolo: string) {
-  return ruolo === "ufficio" ? "/archivio" : "/nuovo";
+  return ruolo === "tecnico" ? "/nuovo" : "/archivio";
 }

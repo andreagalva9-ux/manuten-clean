@@ -11,18 +11,26 @@ import {
   type StatoTecnico,
 } from "@/app/(app)/tecnici/azioni";
 import { Avviso, Bottone, BottoneInvio, Etichetta } from "@/components/ui";
-import type { Profilo } from "@/lib/dominio";
+import type { Profilo, Ruolo } from "@/lib/dominio";
 
 type UtenteConConteggio = Profilo & { fogli: number };
+
+const ETICHETTA_RUOLO: Record<Ruolo, string> = {
+  ufficio: "Ufficio",
+  tecnico: "Tecnico",
+  supervisore: "Supervisione",
+};
 
 export function GestioneTecnici({
   utenti,
   idCorrente,
   invitoEmailDisponibile,
+  soloLettura = false,
 }: {
   utenti: UtenteConConteggio[];
   idCorrente: string;
   invitoEmailDisponibile: boolean;
+  soloLettura?: boolean;
 }) {
   const [aperto, setAperto] = useState(false);
 
@@ -35,13 +43,15 @@ export function GestioneTecnici({
             {utenti.filter((u) => u.attivo).length} utenti attivi
           </p>
         </div>
-        <Bottone
-          type="button"
-          onClick={() => setAperto((v) => !v)}
-          variante={aperto ? "secondario" : "primario"}
-        >
-          {aperto ? "Annulla" : "Invita utente"}
-        </Bottone>
+        {!soloLettura && (
+          <Bottone
+            type="button"
+            onClick={() => setAperto((v) => !v)}
+            variante={aperto ? "secondario" : "primario"}
+          >
+            {aperto ? "Annulla" : "Invita utente"}
+          </Bottone>
+        )}
       </div>
 
       {aperto && (
@@ -54,6 +64,7 @@ export function GestioneTecnici({
             key={utente.id}
             utente={utente}
             corrente={utente.id === idCorrente}
+            soloLettura={soloLettura}
           />
         ))}
       </ul>
@@ -116,6 +127,7 @@ function FormInvito({
           >
             <option value="tecnico">Tecnico</option>
             <option value="ufficio">Ufficio</option>
+            <option value="supervisore">Supervisione (sola lettura)</option>
           </select>
         </div>
 
@@ -169,9 +181,11 @@ function PasswordTemporaneaBox({ password }: { password: string }) {
 function RigaUtente({
   utente,
   corrente,
+  soloLettura,
 }: {
   utente: UtenteConConteggio;
   corrente: boolean;
+  soloLettura: boolean;
 }) {
   const [statoAttivo, azioneAttivo] = useActionState<StatoTecnico, FormData>(
     impostaAttivo,
@@ -211,7 +225,7 @@ function RigaUtente({
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Etichetta colore={utente.ruolo === "ufficio" ? "brand" : "slate"}>
-              {utente.ruolo === "ufficio" ? "Ufficio" : "Tecnico"}
+              {ETICHETTA_RUOLO[utente.ruolo as Ruolo] ?? utente.ruolo}
             </Etichetta>
             {!utente.attivo && <Etichetta colore="rosso">Disattivato</Etichetta>}
             <Etichetta>
@@ -231,76 +245,50 @@ function RigaUtente({
           <PasswordTemporaneaBox password={statoReset.passwordTemporanea} />
         )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <form action={azioneRuolo} className="flex items-center gap-2">
-            <input type="hidden" name="id" value={utente.id} />
-            <input
-              type="hidden"
-              name="ruolo"
-              value={utente.ruolo === "ufficio" ? "tecnico" : "ufficio"}
-            />
-            <BottoneInvio variante="secondario" inCorso="Attendere…">
-              {utente.ruolo === "ufficio"
-                ? "Rendi tecnico"
-                : "Rendi ufficio"}
-            </BottoneInvio>
-          </form>
-
-          <form action={azioneAttivo}>
-            <input type="hidden" name="id" value={utente.id} />
-            <input
-              type="hidden"
-              name="attivo"
-              value={utente.attivo ? "false" : "true"}
-            />
-            <BottoneInvio
-              variante={utente.attivo ? "pericolo" : "secondario"}
-              inCorso="Attendere…"
-            >
-              {utente.attivo ? "Disattiva" : "Attiva"}
-            </BottoneInvio>
-          </form>
-
-          {confermaReset ? (
-            <form action={azioneReset} className="flex items-center gap-2">
+        {!soloLettura && (
+          <div className="flex flex-wrap items-center gap-2">
+            <form action={azioneRuolo} className="flex items-center gap-2">
               <input type="hidden" name="id" value={utente.id} />
-              <span className="text-sm text-slate-600">Confermi?</span>
-              <BottoneInvio variante="secondario" inCorso="Reimpostazione…">
-                Sì, reimposta
+              <select
+                name="ruolo"
+                defaultValue={utente.ruolo}
+                className="campo w-auto py-1.5"
+              >
+                <option value="tecnico">Tecnico</option>
+                <option value="ufficio">Ufficio</option>
+                <option value="supervisore">Supervisione</option>
+              </select>
+              <BottoneInvio variante="secondario" inCorso="Attendere…">
+                Cambia ruolo
               </BottoneInvio>
-              <Bottone
-                type="button"
-                variante="secondario"
-                onClick={() => setConfermaReset(false)}
-              >
-                Annulla
-              </Bottone>
             </form>
-          ) : (
-            <Bottone
-              type="button"
-              variante="secondario"
-              onClick={() => setConfermaReset(true)}
-            >
-              Reimposta password
-            </Bottone>
-          )}
 
-          {!corrente &&
-            (confermaElimina ? (
-              <form
-                action={azioneElimina}
-                className="flex items-center gap-2"
+            <form action={azioneAttivo}>
+              <input type="hidden" name="id" value={utente.id} />
+              <input
+                type="hidden"
+                name="attivo"
+                value={utente.attivo ? "false" : "true"}
+              />
+              <BottoneInvio
+                variante={utente.attivo ? "pericolo" : "secondario"}
+                inCorso="Attendere…"
               >
+                {utente.attivo ? "Disattiva" : "Attiva"}
+              </BottoneInvio>
+            </form>
+
+            {confermaReset ? (
+              <form action={azioneReset} className="flex items-center gap-2">
                 <input type="hidden" name="id" value={utente.id} />
                 <span className="text-sm text-slate-600">Confermi?</span>
-                <BottoneInvio variante="pericolo" inCorso="Eliminazione…">
-                  Sì, elimina
+                <BottoneInvio variante="secondario" inCorso="Reimpostazione…">
+                  Sì, reimposta
                 </BottoneInvio>
                 <Bottone
                   type="button"
                   variante="secondario"
-                  onClick={() => setConfermaElimina(false)}
+                  onClick={() => setConfermaReset(false)}
                 >
                   Annulla
                 </Bottone>
@@ -309,12 +297,42 @@ function RigaUtente({
               <Bottone
                 type="button"
                 variante="secondario"
-                onClick={() => setConfermaElimina(true)}
+                onClick={() => setConfermaReset(true)}
               >
-                Elimina
+                Reimposta password
               </Bottone>
-            ))}
-        </div>
+            )}
+
+            {!corrente &&
+              (confermaElimina ? (
+                <form
+                  action={azioneElimina}
+                  className="flex items-center gap-2"
+                >
+                  <input type="hidden" name="id" value={utente.id} />
+                  <span className="text-sm text-slate-600">Confermi?</span>
+                  <BottoneInvio variante="pericolo" inCorso="Eliminazione…">
+                    Sì, elimina
+                  </BottoneInvio>
+                  <Bottone
+                    type="button"
+                    variante="secondario"
+                    onClick={() => setConfermaElimina(false)}
+                  >
+                    Annulla
+                  </Bottone>
+                </form>
+              ) : (
+                <Bottone
+                  type="button"
+                  variante="secondario"
+                  onClick={() => setConfermaElimina(true)}
+                >
+                  Elimina
+                </Bottone>
+              ))}
+          </div>
+        )}
       </div>
     </li>
   );

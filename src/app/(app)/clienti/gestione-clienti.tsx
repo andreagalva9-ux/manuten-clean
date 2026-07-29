@@ -16,8 +16,10 @@ type ClienteConConteggio = Cliente & { interventi: number };
 
 export function GestioneClienti({
   clienti,
+  soloLettura = false,
 }: {
   clienti: ClienteConConteggio[];
+  soloLettura?: boolean;
 }) {
   const [nuovoAperto, setNuovoAperto] = useState(false);
   const attivi = clienti.filter((c) => !c.deleted_at);
@@ -33,13 +35,15 @@ export function GestioneClienti({
             {archiviati.length > 0 && ` · ${archiviati.length} archiviati`}
           </p>
         </div>
-        <Bottone
-          type="button"
-          onClick={() => setNuovoAperto((v) => !v)}
-          variante={nuovoAperto ? "secondario" : "primario"}
-        >
-          {nuovoAperto ? "Annulla" : "Nuovo cliente"}
-        </Bottone>
+        {!soloLettura && (
+          <Bottone
+            type="button"
+            onClick={() => setNuovoAperto((v) => !v)}
+            variante={nuovoAperto ? "secondario" : "primario"}
+          >
+            {nuovoAperto ? "Annulla" : "Nuovo cliente"}
+          </Bottone>
+        )}
       </div>
 
       {nuovoAperto && (
@@ -58,7 +62,11 @@ export function GestioneClienti({
       ) : (
         <ul className="flex flex-col gap-3">
           {attivi.map((cliente) => (
-            <RigaCliente key={cliente.id} cliente={cliente} />
+            <RigaCliente
+              key={cliente.id}
+              cliente={cliente}
+              soloLettura={soloLettura}
+            />
           ))}
         </ul>
       )}
@@ -70,7 +78,11 @@ export function GestioneClienti({
           </h2>
           <ul className="flex flex-col gap-3">
             {archiviati.map((cliente) => (
-              <RigaCliente key={cliente.id} cliente={cliente} />
+              <RigaCliente
+                key={cliente.id}
+                cliente={cliente}
+                soloLettura={soloLettura}
+              />
             ))}
           </ul>
         </section>
@@ -252,7 +264,13 @@ function CampiCliente({ cliente }: { cliente?: Cliente }) {
   );
 }
 
-function RigaCliente({ cliente }: { cliente: ClienteConConteggio }) {
+function RigaCliente({
+  cliente,
+  soloLettura,
+}: {
+  cliente: ClienteConConteggio;
+  soloLettura: boolean;
+}) {
   const [modifica, setModifica] = useState(false);
   const archiviato = Boolean(cliente.deleted_at);
 
@@ -330,26 +348,28 @@ function RigaCliente({ cliente }: { cliente: ClienteConConteggio }) {
 
           {statoArchivio.errore && <Avviso>{statoArchivio.errore}</Avviso>}
 
-          <div className="flex flex-wrap gap-2">
-            {!archiviato && (
-              <Bottone
-                type="button"
-                variante="secondario"
-                onClick={() => setModifica(true)}
-              >
-                Modifica
-              </Bottone>
-            )}
-            <form action={azioneArchivio}>
-              <input type="hidden" name="id" value={cliente.id} />
-              <BottoneInvio
-                variante={archiviato ? "secondario" : "pericolo"}
-                inCorso="Attendere…"
-              >
-                {archiviato ? "Ripristina" : "Archivia"}
-              </BottoneInvio>
-            </form>
-          </div>
+          {!soloLettura && (
+            <div className="flex flex-wrap gap-2">
+              {!archiviato && (
+                <Bottone
+                  type="button"
+                  variante="secondario"
+                  onClick={() => setModifica(true)}
+                >
+                  Modifica
+                </Bottone>
+              )}
+              <form action={azioneArchivio}>
+                <input type="hidden" name="id" value={cliente.id} />
+                <BottoneInvio
+                  variante={archiviato ? "secondario" : "pericolo"}
+                  inCorso="Attendere…"
+                >
+                  {archiviato ? "Ripristina" : "Archivia"}
+                </BottoneInvio>
+              </form>
+            </div>
+          )}
         </div>
       )}
     </li>

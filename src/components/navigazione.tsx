@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import type { Profilo } from "@/lib/dominio";
+import { isSupervisore, puoVedereTutto, type Profilo } from "@/lib/dominio";
 
 type Voce = { href: string; etichetta: string; icona: React.ReactNode };
 
@@ -25,22 +25,26 @@ function Icona({ d }: { d: string }) {
 }
 
 function vociPerRuolo(profilo: Profilo): Voce[] {
-  const voci: Voce[] = [
-    {
+  const voci: Voce[] = [];
+
+  // Chi è in sola supervisione non compila fogli: consulta solo l'archivio.
+  if (!isSupervisore(profilo)) {
+    voci.push({
       href: "/nuovo",
       etichetta: "Nuovo",
       icona: <Icona d="M12 5v14M5 12h14" />,
-    },
-    {
-      href: "/archivio",
-      etichetta: "Archivio",
-      icona: (
-        <Icona d="M3 7h18M5 7v12a1 1 0 001 1h12a1 1 0 001-1V7M9 11h6M4 7l1.5-3h13L20 7" />
-      ),
-    },
-  ];
+    });
+  }
 
-  if (profilo.ruolo === "ufficio") {
+  voci.push({
+    href: "/archivio",
+    etichetta: "Archivio",
+    icona: (
+      <Icona d="M3 7h18M5 7v12a1 1 0 001 1h12a1 1 0 001-1V7M9 11h6M4 7l1.5-3h13L20 7" />
+    ),
+  });
+
+  if (puoVedereTutto(profilo)) {
     voci.push(
       {
         href: "/clienti",

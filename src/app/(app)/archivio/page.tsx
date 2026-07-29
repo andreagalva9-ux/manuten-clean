@@ -7,7 +7,9 @@ import {
   codiceCommessa,
   formattaData,
   formattaOre,
+  isSupervisore,
   isUfficio,
+  puoVedereTutto,
 } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
@@ -84,12 +86,14 @@ export default async function PaginaArchivio({
           </h1>
           <p className="text-sm text-slate-500">
             {totale} {totale === 1 ? "foglio" : "fogli"}
-            {!isUfficio(profilo) && " visibili al tuo profilo"}
+            {!puoVedereTutto(profilo) && " visibili al tuo profilo"}
           </p>
         </div>
-        <BottoneLink href="/nuovo" className="shrink-0">
-          Nuovo foglio
-        </BottoneLink>
+        {!isSupervisore(profilo) && (
+          <BottoneLink href="/nuovo" className="shrink-0">
+            Nuovo foglio
+          </BottoneLink>
+        )}
       </div>
 
       <Filtri clienti={clienti ?? []} />
