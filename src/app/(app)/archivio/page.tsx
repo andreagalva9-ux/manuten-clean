@@ -128,6 +128,9 @@ export default async function PaginaArchivio({
                   {intervento.deleted_at && (
                     <Etichetta colore="rosso">Eliminato</Etichetta>
                   )}
+                  {!intervento.deleted_at && intervento.finalizzato_at && (
+                    <Etichetta>Inviato</Etichetta>
+                  )}
                   <span className="text-xs text-slate-400">
                     {intervento.compilatore?.nome ?? "—"}
                   </span>

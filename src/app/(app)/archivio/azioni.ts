@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { richiediProfilo } from "@/lib/auth";
-import { puoEliminare } from "@/lib/dominio";
+import { richiediProfilo, richiediUfficio } from "@/lib/auth";
+import { puoEliminare, puoModificare } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { leggiFirma } from "@/lib/firme";
 import { createClient } from "@/lib/supabase/server";
@@ -80,9 +80,26 @@ export async function aggiornaIntervento(
   _stato: StatoArchivio,
   formData: FormData,
 ): Promise<StatoArchivio> {
-  await richiediProfilo();
+  const profilo = await richiediProfilo();
   const id = String(formData.get("id") ?? "");
   if (!id) return { errore: "Foglio non identificato." };
+
+  const supabaseLettura = await createClient();
+  const { data: esistente, error: erroreLettura } = await supabaseLettura
+    .from("interventi")
+    .select("compilato_da, tecnici_ids, finalizzato_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (erroreLettura) return { errore: messaggioErrore(erroreLettura) };
+  if (!esistente) return { errore: "Foglio non trovato." };
+  if (!puoModificare(esistente, profilo)) {
+    return {
+      errore: esistente.finalizzato_at
+        ? "Questo foglio è stato inviato definitivamente: solo l'ufficio può ancora modificarlo."
+        : "Non hai i permessi per modificare questo foglio.",
+    };
+  }
 
   const data = String(formData.get("data") ?? "");
   const oreGrezze = String(formData.get("ore") ?? "").trim();
@@ -131,4 +148,67 @@ export async function aggiornaIntervento(
   revalidatePath("/archivio");
   revalidatePath(`/archivio/${id}`);
   return { successo: "Modifiche salvate." };
+}
+
+/**
+ * Invio definitivo: da qui in poi solo l'ufficio può ancora modificare il
+ * foglio. Azione volutamente a senso unico per il tecnico (non può
+ * "sbloccarsi" da solo).
+ */
+export async function finalizzaIntervento(
+  _stato: StatoArchivio,
+  formData: FormData,
+): Promise<StatoArchivio> {
+  const profilo = await richiediProfilo();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { errore: "Foglio non identificato." };
+
+  const supabase = await createClient();
+  const { data: esistente, error: erroreLettura } = await supabase
+    .from("interventi")
+    .select("compilato_da, tecnici_ids, finalizzato_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (erroreLettura) return { errore: messaggioErrore(erroreLettura) };
+  if (!esistente) return { errore: "Foglio non trovato." };
+  if (esistente.finalizzato_at) {
+    return { errore: "Questo foglio è già stato inviato definitivamente." };
+  }
+  if (!puoModificare(esistente, profilo)) {
+    return { errore: "Non hai i permessi per inviare questo foglio." };
+  }
+
+  const { error } = await supabase
+    .from("interventi")
+    .update({ finalizzato_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) return { errore: messaggioErrore(error) };
+
+  revalidatePath("/archivio");
+  revalidatePath(`/archivio/${id}`);
+  return { successo: "Foglio inviato definitivamente: non è più modificabile." };
+}
+
+/** Solo l'ufficio può riaprire un foglio già inviato definitivamente. */
+export async function sbloccaIntervento(
+  _stato: StatoArchivio,
+  formData: FormData,
+): Promise<StatoArchivio> {
+  await richiediUfficio();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { errore: "Foglio non identificato." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("interventi")
+    .update({ finalizzato_at: null })
+    .eq("id", id);
+
+  if (error) return { errore: messaggioErrore(error) };
+
+  revalidatePath("/archivio");
+  revalidatePath(`/archivio/${id}`);
+  return { successo: "Foglio sbloccato: torna modificabile." };
 }

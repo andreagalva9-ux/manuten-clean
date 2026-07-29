@@ -91,6 +91,26 @@ export function puoEliminare(
   return isUfficio(profilo) || intervento.compilato_da === profilo.id;
 }
 
+/**
+ * Una volta inviato definitivamente, solo l'ufficio può ancora modificarlo:
+ * il tecnico (compilatore o assegnato) perde il diritto di modifica.
+ */
+export function puoModificare(
+  intervento: Pick<
+    Intervento,
+    "compilato_da" | "tecnici_ids" | "finalizzato_at"
+  >,
+  profilo: Pick<Profilo, "id" | "ruolo"> | null | undefined,
+) {
+  if (!profilo) return false;
+  if (isUfficio(profilo)) return true;
+  if (intervento.finalizzato_at) return false;
+  return (
+    intervento.compilato_da === profilo.id ||
+    intervento.tecnici_ids.includes(profilo.id)
+  );
+}
+
 export function formattaData(data: string) {
   const [anno, mese, giorno] = data.split("-");
   return `${giorno}/${mese}/${anno}`;

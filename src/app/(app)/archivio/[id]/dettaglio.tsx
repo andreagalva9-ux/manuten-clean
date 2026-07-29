@@ -5,7 +5,9 @@ import { useActionState, useState } from "react";
 import {
   aggiornaIntervento,
   eliminaIntervento,
+  finalizzaIntervento,
   ripristinaIntervento,
+  sbloccaIntervento,
   type StatoArchivio,
 } from "@/app/(app)/archivio/azioni";
 import { FirmaTouch } from "@/components/firma-touch";
@@ -16,6 +18,7 @@ import {
   formattaOre,
   isUfficio,
   puoEliminare,
+  puoModificare,
   type Cliente,
   type Intervento,
   type Profilo,
@@ -43,6 +46,7 @@ export function Dettaglio({
 }) {
   const [modifica, setModifica] = useState(false);
   const [confermaEliminazione, setConfermaEliminazione] = useState(false);
+  const [confermaInvio, setConfermaInvio] = useState(false);
 
   const [statoModifica, azioneModifica] = useActionState<StatoArchivio, FormData>(
     async (precedente, formData) => {
@@ -58,7 +62,19 @@ export function Dettaglio({
     {},
   );
 
+  const [statoInvio, azioneInvio] = useActionState<StatoArchivio, FormData>(
+    finalizzaIntervento,
+    {},
+  );
+
+  const [statoSblocco, azioneSblocco] = useActionState<StatoArchivio, FormData>(
+    sbloccaIntervento,
+    {},
+  );
+
   const eliminato = Boolean(intervento.deleted_at);
+  const finalizzato = Boolean(intervento.finalizzato_at);
+  const modificabile = puoModificare(intervento, profilo);
   const codice = codiceCommessa(intervento.tipo, intervento.numero);
 
   return (
@@ -80,6 +96,11 @@ export function Dettaglio({
           {intervento.tipo} · intervento n. {intervento.numero} di{" "}
           {numeroTotale}
         </p>
+        {finalizzato && (
+          <span className="mt-2 inline-flex items-center rounded-md bg-white/15 px-2 py-0.5 text-xs font-medium text-white">
+            Inviato definitivamente
+          </span>
+        )}
       </header>
 
       {eliminato && (
@@ -90,9 +111,24 @@ export function Dettaglio({
         </Avviso>
       )}
 
+      {finalizzato && !isUfficio(profilo) && (
+        <Avviso tipo="info">
+          Questo foglio è stato inviato definitivamente e non è più
+          modificabile. Se serve una correzione, chiedi all&apos;ufficio.
+        </Avviso>
+      )}
+
       {statoElimina.errore && <Avviso>{statoElimina.errore}</Avviso>}
       {statoElimina.successo && (
         <Avviso tipo="successo">{statoElimina.successo}</Avviso>
+      )}
+      {statoInvio.errore && <Avviso>{statoInvio.errore}</Avviso>}
+      {statoInvio.successo && (
+        <Avviso tipo="successo">{statoInvio.successo}</Avviso>
+      )}
+      {statoSblocco.errore && <Avviso>{statoSblocco.errore}</Avviso>}
+      {statoSblocco.successo && (
+        <Avviso tipo="successo">{statoSblocco.successo}</Avviso>
       )}
 
       {modifica ? (
@@ -364,7 +400,7 @@ export function Dettaglio({
             Esporta PDF
           </a>
 
-          {!eliminato && (
+          {!eliminato && modificabile && (
             <Bottone
               type="button"
               variante="secondario"
@@ -372,6 +408,43 @@ export function Dettaglio({
             >
               Modifica
             </Bottone>
+          )}
+
+          {!eliminato && !finalizzato && modificabile && (
+            <>
+              {confermaInvio ? (
+                <form action={azioneInvio} className="flex gap-2">
+                  <input type="hidden" name="id" value={intervento.id} />
+                  <BottoneInvio inCorso="Invio…">
+                    Conferma invio
+                  </BottoneInvio>
+                  <Bottone
+                    type="button"
+                    variante="secondario"
+                    onClick={() => setConfermaInvio(false)}
+                  >
+                    Annulla
+                  </Bottone>
+                </form>
+              ) : (
+                <Bottone
+                  type="button"
+                  variante="secondario"
+                  onClick={() => setConfermaInvio(true)}
+                >
+                  Invia definitivamente
+                </Bottone>
+              )}
+            </>
+          )}
+
+          {!eliminato && finalizzato && isUfficio(profilo) && (
+            <form action={azioneSblocco}>
+              <input type="hidden" name="id" value={intervento.id} />
+              <BottoneInvio variante="secondario" inCorso="Attendere…">
+                Sblocca per modificare
+              </BottoneInvio>
+            </form>
           )}
 
           {puoEliminare(intervento, profilo) && !eliminato && (

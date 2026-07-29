@@ -130,6 +130,7 @@ export type Database = {
           created_at: string
           data: string
           deleted_at: string | null
+          finalizzato_at: string | null
           firma_cliente_svg: string | null
           firma_tecnico_svg: string | null
           id: string
@@ -152,6 +153,7 @@ export type Database = {
           created_at?: string
           data: string
           deleted_at?: string | null
+          finalizzato_at?: string | null
           firma_cliente_svg?: string | null
           firma_tecnico_svg?: string | null
           id?: string
@@ -172,6 +174,7 @@ export type Database = {
           created_at?: string
           data?: string
           deleted_at?: string | null
+          finalizzato_at?: string | null
           firma_cliente_svg?: string | null
           firma_tecnico_svg?: string | null
           id?: string
