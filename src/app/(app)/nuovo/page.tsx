@@ -10,10 +10,15 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Nuovo foglio · Manuten & Clean" };
 
-export default async function PaginaNuovo() {
+export default async function PaginaNuovo({
+  searchParams,
+}: {
+  searchParams: Promise<{ client_id?: string; tipo?: string }>;
+}) {
   const profilo = await richiediProfilo();
   // Chi è in sola supervisione non compila fogli, solo consultazione.
   if (isSupervisore(profilo)) redirect("/archivio");
+  const { client_id: clientIdIniziale, tipo: tipoIniziale } = await searchParams;
   const supabase = await createClient();
 
   const [
@@ -79,6 +84,8 @@ export default async function PaginaNuovo() {
         tecnici={tecnici ?? []}
         assegnazioni={assegnazioni ?? []}
         profilo={profilo}
+        clientIdIniziale={clientIdIniziale}
+        tipoIniziale={tipoIniziale}
       />
     </div>
   );

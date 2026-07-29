@@ -36,13 +36,22 @@ function vociPerRuolo(profilo: Profilo): Voce[] {
     });
   }
 
-  voci.push({
-    href: "/archivio",
-    etichetta: "Archivio",
-    icona: (
-      <Icona d="M3 7h18M5 7v12a1 1 0 001 1h12a1 1 0 001-1V7M9 11h6M4 7l1.5-3h13L20 7" />
-    ),
-  });
+  voci.push(
+    {
+      href: "/incarichi",
+      etichetta: "Incarichi",
+      icona: (
+        <Icona d="M9 11l3 3L22 4M6 12v7a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1h-5" />
+      ),
+    },
+    {
+      href: "/archivio",
+      etichetta: "Archivio",
+      icona: (
+        <Icona d="M3 7h18M5 7v12a1 1 0 001 1h12a1 1 0 001-1V7M9 11h6M4 7l1.5-3h13L20 7" />
+      ),
+    },
+  );
 
   if (puoVedereTutto(profilo)) {
     voci.push(

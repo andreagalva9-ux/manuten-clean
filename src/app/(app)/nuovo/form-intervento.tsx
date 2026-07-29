@@ -10,6 +10,7 @@ import { FirmaTouch } from "@/components/firma-touch";
 import { Avviso, Bottone, BottoneInvio } from "@/components/ui";
 import {
   codiceCommessa,
+  isTipoCommessa,
   oggiISO,
   TIPI_COMMESSA,
   type Assegnazione,
@@ -34,19 +35,31 @@ export function FormIntervento({
   tecnici,
   assegnazioni,
   profilo,
+  clientIdIniziale,
+  tipoIniziale,
 }: {
   clienti: Pick<Cliente, "id" | "nome" | "indirizzo">[];
   tecnici: Pick<Profilo, "id" | "nome">[];
   assegnazioni: Pick<Assegnazione, "client_id" | "tecnico_id" | "tipo">[];
   profilo: Profilo;
+  clientIdIniziale?: string;
+  tipoIniziale?: string;
 }) {
   const [stato, azione] = useActionState<StatoIntervento, FormData>(
     creaIntervento,
     {},
   );
 
-  const [clientId, setClientId] = useState("");
-  const [tipo, setTipo] = useState("");
+  // Precompilati quando si arriva da un incarico pianificato
+  // (/nuovo?client_id=...&tipo=...): restano comunque modificabili.
+  const [clientId, setClientId] = useState(() =>
+    clientIdIniziale && clienti.some((c) => c.id === clientIdIniziale)
+      ? clientIdIniziale
+      : "",
+  );
+  const [tipo, setTipo] = useState(() =>
+    tipoIniziale && isTipoCommessa(tipoIniziale) ? tipoIniziale : "",
+  );
   const [risultato, setRisultato] = useState<Risultato | null>(null);
 
   // Preselezione (non vincolante) dei tecnici in base alle assegnazioni: si

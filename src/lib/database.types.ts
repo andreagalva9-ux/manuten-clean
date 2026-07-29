@@ -122,6 +122,64 @@ export type Database = {
           },
         ]
       }
+      incarichi: {
+        Row: {
+          client_id: string
+          completato_at: string | null
+          created_at: string
+          creato_da: string
+          id: string
+          note: string | null
+          scadenza: string
+          tecnico_id: string
+          tipo: string
+        }
+        Insert: {
+          client_id: string
+          completato_at?: string | null
+          created_at?: string
+          creato_da: string
+          id?: string
+          note?: string | null
+          scadenza: string
+          tecnico_id: string
+          tipo: string
+        }
+        Update: {
+          client_id?: string
+          completato_at?: string | null
+          created_at?: string
+          creato_da?: string
+          id?: string
+          note?: string | null
+          scadenza?: string
+          tecnico_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incarichi_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incarichi_tecnico_id_fkey"
+            columns: ["tecnico_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incarichi_creato_da_fkey"
+            columns: ["creato_da"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interventi: {
         Row: {
           aree_intervento: string | null
