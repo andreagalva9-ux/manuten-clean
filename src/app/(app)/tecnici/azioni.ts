@@ -7,6 +7,7 @@ import { richiediUfficio } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
 import { messaggioErrore, messaggioErroreAuth } from "@/lib/errori";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { urlCallback } from "@/lib/url";
 
 export type StatoTecnico = {
   errore?: string;
@@ -17,17 +18,6 @@ export type StatoTecnico = {
 function passwordCasuale() {
   // 24 caratteri esadecimali: sufficiente come credenziale usa-e-getta.
   return `MC-${crypto.randomUUID().replaceAll("-", "").slice(0, 20)}`;
-}
-
-function urlRedirect() {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : undefined);
-  // Il link dell'email porta allo scambio del codice PKCE, che stabilisce la
-  // sessione prima di mandare l'utente a impostare la propria password.
-  return base ? `${base}/auth/callback?next=/imposta-password` : undefined;
 }
 
 /**
@@ -64,7 +54,7 @@ export async function invitaUtente(
   if (admin && modalita === "invito") {
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: { nome, ruolo },
-      redirectTo: urlRedirect(),
+      redirectTo: urlCallback("/imposta-password"),
     });
 
     if (error) {
@@ -99,7 +89,10 @@ export async function invitaUtente(
     const { data, error } = await anonimo.auth.signUp({
       email,
       password: passwordTemporanea,
-      options: { data: { nome, ruolo }, emailRedirectTo: urlRedirect() },
+      options: {
+        data: { nome, ruolo },
+        emailRedirectTo: urlCallback("/imposta-password"),
+      },
     });
 
     if (error) return { errore: messaggioErroreAuth(error) };

@@ -37,6 +37,14 @@ export default async function PaginaLogin({
 
           <GateInvito>
             <FormLogin destinazione={destinazione} />
+            <p className="mt-3 text-center text-sm">
+              <Link
+                href="/recupera-password"
+                className="font-medium text-brand-700 underline underline-offset-2"
+              >
+                Password dimenticata?
+              </Link>
+            </p>
           </GateInvito>
 
           {serveBootstrap && (
