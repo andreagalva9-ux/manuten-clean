@@ -173,13 +173,13 @@ function DashboardTecnico({
         <StatCard
           etichetta="Bozze da inviare"
           valore={dati.bozze}
-          href="/archivio"
+          href="/miei-fogli"
           allarme={dati.bozze > 0}
         />
         <StatCard
           etichetta="Fogli questo mese"
           valore={dati.fogliMese}
-          href="/archivio"
+          href="/miei-fogli"
         />
       </div>
 
@@ -194,7 +194,7 @@ function DashboardTecnico({
         azioni={[
           { href: "/nuovo", etichetta: "Compila un nuovo foglio", primaria: true },
           { href: "/incarichi", etichetta: "I miei incarichi" },
-          { href: "/archivio", etichetta: "I miei fogli" },
+          { href: "/miei-fogli", etichetta: "I miei fogli" },
         ]}
       />
     </div>

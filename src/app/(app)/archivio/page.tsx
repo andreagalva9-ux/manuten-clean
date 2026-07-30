@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Filtri } from "@/app/(app)/archivio/filtri";
 import { Avviso, BottoneLink, Etichetta, StatoVuoto } from "@/components/ui";
@@ -32,6 +33,10 @@ export default async function PaginaArchivio({
   searchParams: Promise<ParametriRicerca>;
 }) {
   const profilo = await richiediProfilo();
+  // L'archivio generale è riservato a ufficio, supervisione e pianificazione:
+  // il tecnico consulta i propri fogli dalla sua sezione dedicata.
+  if (!puoVedereTutto(profilo)) redirect("/miei-fogli");
+
   const params = await searchParams;
   const supabase = await createClient();
 

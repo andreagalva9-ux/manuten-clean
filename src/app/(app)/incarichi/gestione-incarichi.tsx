@@ -22,6 +22,8 @@ type IncaricoRiga = {
   scadenza: string;
   note: string | null;
   completato_at: string | null;
+  /** Foglio che ha chiuso l'incarico, valorizzato all'invio definitivo. */
+  intervento_id: string | null;
   cliente: { id: string; nome: string } | null;
   tecnico: { id: string; nome: string } | null;
 };
@@ -230,6 +232,16 @@ function RigaIncarico({
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-800"
           >
             Vai a compila
+          </Link>
+        )}
+
+        {/* Dall'incarico chiuso si risale al foglio che lo ha completato. */}
+        {completato && incarico.intervento_id && (
+          <Link
+            href={`/archivio/${incarico.intervento_id}`}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Apri il foglio
           </Link>
         )}
 

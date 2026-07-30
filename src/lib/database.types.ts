@@ -129,6 +129,7 @@ export type Database = {
           created_at: string
           creato_da: string
           id: string
+          intervento_id: string | null
           note: string | null
           scadenza: string
           tecnico_id: string
@@ -140,6 +141,7 @@ export type Database = {
           created_at?: string
           creato_da: string
           id?: string
+          intervento_id?: string | null
           note?: string | null
           scadenza: string
           tecnico_id: string
@@ -151,6 +153,7 @@ export type Database = {
           created_at?: string
           creato_da?: string
           id?: string
+          intervento_id?: string | null
           note?: string | null
           scadenza?: string
           tecnico_id?: string

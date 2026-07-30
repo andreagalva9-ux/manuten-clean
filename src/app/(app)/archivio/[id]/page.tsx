@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Dettaglio } from "@/app/(app)/archivio/[id]/dettaglio";
 import { Avviso } from "@/components/ui";
 import { richiediProfilo } from "@/lib/auth";
-import { codiceCommessa } from "@/lib/dominio";
+import { codiceCommessa, puoVedereTutto } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
@@ -68,10 +68,10 @@ export default async function PaginaDettaglio({
   return (
     <div className="flex flex-col gap-4">
       <Link
-        href="/archivio"
+        href={puoVedereTutto(profilo) ? "/archivio" : "/miei-fogli"}
         className="self-start text-sm font-medium text-slate-500 hover:text-slate-800"
       >
-        ← Archivio
+        ← {puoVedereTutto(profilo) ? "Archivio" : "I miei fogli"}
       </Link>
 
       <Dettaglio
