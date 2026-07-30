@@ -24,7 +24,7 @@ export default async function PaginaNuovo({
   const [
     { data: clienti, error: erroreClienti },
     { data: tecnici, error: erroreTecnici },
-    { data: assegnazioni },
+    { data: incarichiAperti },
   ] = await Promise.all([
     supabase
       .from("clients")
@@ -37,7 +37,12 @@ export default async function PaginaNuovo({
       .eq("ruolo", "tecnico")
       .eq("attivo", true)
       .order("nome"),
-    supabase.from("assegnazioni").select("client_id, tecnico_id, tipo"),
+    // Gli incarichi ancora aperti dicono chi è atteso su quel cliente e tipo:
+    // servono a preselezionare i tecnici, senza vincolare la scelta.
+    supabase
+      .from("incarichi")
+      .select("client_id, tecnico_id, tipo")
+      .is("completato_at", null),
   ]);
 
   if (erroreClienti) {
@@ -82,7 +87,7 @@ export default async function PaginaNuovo({
       <FormIntervento
         clienti={clienti}
         tecnici={tecnici ?? []}
-        assegnazioni={assegnazioni ?? []}
+        incarichiAperti={incarichiAperti ?? []}
         profilo={profilo}
         clientIdIniziale={clientIdIniziale}
         tipoIniziale={tipoIniziale}

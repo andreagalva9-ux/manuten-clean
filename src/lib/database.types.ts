@@ -12,45 +12,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      assegnazioni: {
-        Row: {
-          client_id: string
-          created_at: string
-          id: string
-          tecnico_id: string
-          tipo: string | null
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          id?: string
-          tecnico_id: string
-          tipo?: string | null
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          id?: string
-          tecnico_id?: string
-          tipo?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assegnazioni_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "assegnazioni_tecnico_id_fkey"
-            columns: ["tecnico_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       clients: {
         Row: {
           cap: string | null

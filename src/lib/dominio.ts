@@ -83,7 +83,6 @@ export function isRuolo(valore: unknown): valore is Ruolo {
 export type Profilo = Tables<"profiles">;
 export type Cliente = Tables<"clients">;
 export type Intervento = Tables<"interventi">;
-export type Assegnazione = Tables<"assegnazioni">;
 export type Incarico = Tables<"incarichi">;
 
 export type InterventoCompleto = Intervento & {
@@ -123,11 +122,15 @@ export function puoCompilare(
   return profilo?.ruolo === "tecnico" || isUfficio(profilo);
 }
 
-/** Chi crea/modifica/elimina gli incarichi pianificati. */
+/**
+ * Chi crea/modifica/elimina gli incarichi pianificati: solo il pianificatore.
+ * L'ufficio ne ha visibilità completa ma non li gestisce; se serve spostare
+ * la pianificazione, l'ufficio può assegnare il ruolo a un altro utente.
+ */
 export function puoPianificare(
   profilo: Pick<Profilo, "ruolo"> | null | undefined,
 ) {
-  return isUfficio(profilo) || isPianificatore(profilo);
+  return isPianificatore(profilo);
 }
 
 /**

@@ -13,8 +13,8 @@ import {
   isTipoCommessa,
   oggiISO,
   TIPI_COMMESSA,
-  type Assegnazione,
   type Cliente,
+  type Incarico,
   type Profilo,
 } from "@/lib/dominio";
 import { createClient } from "@/lib/supabase/client";
@@ -33,14 +33,14 @@ type Risultato = { chiave: string } & (
 export function FormIntervento({
   clienti,
   tecnici,
-  assegnazioni,
+  incarichiAperti,
   profilo,
   clientIdIniziale,
   tipoIniziale,
 }: {
   clienti: Pick<Cliente, "id" | "nome" | "indirizzo">[];
   tecnici: Pick<Profilo, "id" | "nome">[];
-  assegnazioni: Pick<Assegnazione, "client_id" | "tecnico_id" | "tipo">[];
+  incarichiAperti: Pick<Incarico, "client_id" | "tecnico_id" | "tipo">[];
   profilo: Profilo;
   clientIdIniziale?: string;
   tipoIniziale?: string;
@@ -62,20 +62,19 @@ export function FormIntervento({
   );
   const [risultato, setRisultato] = useState<Risultato | null>(null);
 
-  // Preselezione (non vincolante) dei tecnici in base alle assegnazioni: si
-  // preferisce un'assegnazione specifica per quel tipo, altrimenti quella
-  // generica ("tutti i tipi"). La chiave cliente+tipo viene usata come `key`
-  // di SelezioneTecnici così, cambiando cliente o tipo, la selezione riparte
-  // dal suggerimento invece di trascinarsi eventuali modifiche manuali fatte
+  // Preselezione (non vincolante) dei tecnici a partire dagli incarichi
+  // ancora aperti per quel cliente e tipo: sono quelli che il pianificatore
+  // si aspetta su questo lavoro. La chiave cliente+tipo viene usata come
+  // `key` di SelezioneTecnici così, cambiando cliente o tipo, la selezione
+  // riparte dal suggerimento invece di trascinarsi modifiche manuali fatte
   // per una combinazione precedente.
   const tecniciSuggeriti = useMemo(() => {
-    if (!clientId) return new Set<string>();
-    const perCliente = assegnazioni.filter((a) => a.client_id === clientId);
-    const specifiche = tipo ? perCliente.filter((a) => a.tipo === tipo) : [];
-    const generiche = perCliente.filter((a) => a.tipo === null);
-    const suggerite = specifiche.length > 0 ? specifiche : generiche;
-    return new Set(suggerite.map((a) => a.tecnico_id));
-  }, [clientId, tipo, assegnazioni]);
+    if (!clientId || !tipo) return new Set<string>();
+    const pertinenti = incarichiAperti.filter(
+      (i) => i.client_id === clientId && i.tipo === tipo,
+    );
+    return new Set(pertinenti.map((i) => i.tecnico_id));
+  }, [clientId, tipo, incarichiAperti]);
 
   // La coppia cliente+tipo identifica la richiesta in corso: confrontandola con
   // quella dell'ultima risposta si distingue "sto caricando" da "ho il dato",
@@ -413,8 +412,8 @@ function SelezioneTecnici({
     <section className="scheda p-4">
       <p className="etichetta">Tecnici assegnati</p>
       <p className="mb-2 text-xs text-slate-500">
-        Precompilato in base alle assegnazioni cliente → tecnico: puoi
-        correggerlo prima di salvare.
+        Precompilato in base agli incarichi aperti per questo cliente e
+        lavorazione: puoi correggerlo prima di salvare.
       </p>
       <ul className="grid gap-2 sm:grid-cols-2">
         {tecnici.map((tecnico) => (
