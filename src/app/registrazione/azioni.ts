@@ -66,5 +66,5 @@ export async function registraUfficio(
     };
   }
 
-  redirect("/archivio");
+  redirect("/panoramica");
 }

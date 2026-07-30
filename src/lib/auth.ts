@@ -53,9 +53,7 @@ export async function richiediPianificazione(): Promise<Profilo> {
   return profilo;
 }
 
-/** Home di destinazione dopo il login, in base al ruolo. */
-export function homePerRuolo(ruolo: string) {
-  if (ruolo === "tecnico") return "/nuovo";
-  if (ruolo === "pianificatore") return "/incarichi";
-  return "/archivio";
+/** Dopo il login tutti atterrano sulla propria dashboard. */
+export function homePerRuolo() {
+  return "/panoramica";
 }

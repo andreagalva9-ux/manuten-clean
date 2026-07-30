@@ -63,7 +63,7 @@ export async function accedi(
   redirect(
     destinazione && destinazione.startsWith("/")
       ? destinazione
-      : homePerRuolo(profilo.ruolo),
+      : homePerRuolo(),
   );
 }
 

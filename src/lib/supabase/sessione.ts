@@ -47,7 +47,7 @@ export async function aggiornaSessione(request: NextRequest) {
 
   if (user && (pathname === "/login" || pathname === "/registrazione")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/archivio";
+    url.pathname = "/panoramica";
     url.search = "";
     return NextResponse.redirect(url);
   }

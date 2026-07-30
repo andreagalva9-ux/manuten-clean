@@ -25,7 +25,15 @@ function Icona({ d }: { d: string }) {
 }
 
 function vociPerRuolo(profilo: Profilo): Voce[] {
-  const voci: Voce[] = [];
+  const voci: Voce[] = [
+    {
+      href: "/panoramica",
+      etichetta: "Home",
+      icona: (
+        <Icona d="M3 10.5L12 3l9 7.5M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" />
+      ),
+    },
+  ];
 
   // Supervisore e pianificatore non compilano fogli: niente voce "Nuovo".
   if (puoCompilare(profilo)) {

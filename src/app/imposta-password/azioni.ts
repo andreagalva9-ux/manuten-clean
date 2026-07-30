@@ -37,11 +37,5 @@ export async function impostaPassword(
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { errore: messaggioErroreAuth(error) };
 
-  const { data: profilo } = await supabase
-    .from("profiles")
-    .select("ruolo")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  redirect(homePerRuolo(profilo?.ruolo ?? "tecnico"));
+  redirect(homePerRuolo());
 }
