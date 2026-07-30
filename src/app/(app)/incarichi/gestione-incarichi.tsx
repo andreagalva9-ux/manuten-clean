@@ -233,7 +233,9 @@ function RigaIncarico({
           </Link>
         )}
 
-        {puoSegnare && (
+        {/* Riaprire un incarico completato spetta solo a chi pianifica: il
+            tecnico può segnarlo come fatto, non tornare indietro. */}
+        {puoSegnare && (!completato || puoGestire) && (
           <form action={azioneSegna}>
             <input type="hidden" name="id" value={incarico.id} />
             <input

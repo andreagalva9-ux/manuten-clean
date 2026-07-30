@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { richiediPianificazione, richiediProfilo } from "@/lib/auth";
-import { isTipoCommessa, oggiISO } from "@/lib/dominio";
+import { isTipoCommessa, oggiISO, puoPianificare } from "@/lib/dominio";
 import { inviaEmail } from "@/lib/email/invio";
 import { templateNuovoIncarico } from "@/lib/email/template";
 import { messaggioErrore } from "@/lib/errori";
@@ -137,10 +137,19 @@ export async function segnaIncarico(
   _stato: StatoIncarico,
   formData: FormData,
 ): Promise<StatoIncarico> {
-  await richiediProfilo();
+  const profilo = await richiediProfilo();
   const id = String(formData.get("id") ?? "");
   const completato = String(formData.get("completato") ?? "") === "true";
   if (!id) return { errore: "Incarico non identificato." };
+
+  // Segnare come fatto spetta anche al tecnico; riaprire no, come per la
+  // riapertura di un foglio già inviato definitivamente.
+  if (!completato && !puoPianificare(profilo)) {
+    return {
+      errore:
+        "Un incarico già completato può essere riaperto solo dall'ufficio.",
+    };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
