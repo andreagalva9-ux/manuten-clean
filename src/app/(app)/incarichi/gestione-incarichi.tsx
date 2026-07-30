@@ -67,6 +67,10 @@ export function GestioneIncarichi({
             {daFare.length} da fare
             {completati.length > 0 && ` · ${completati.length} completati`}
           </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Gli incarichi si segnano da soli come fatti quando invii
+            definitivamente il foglio di lavoro corrispondente.
+          </p>
         </div>
         {puoGestire && (
           <Bottone

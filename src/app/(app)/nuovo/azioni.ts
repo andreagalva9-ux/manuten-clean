@@ -97,5 +97,6 @@ export async function creaIntervento(
 
   revalidatePath("/archivio");
   revalidatePath("/clienti");
+  revalidatePath("/panoramica");
   redirect(`/archivio/${idCreato}?creato=1`);
 }

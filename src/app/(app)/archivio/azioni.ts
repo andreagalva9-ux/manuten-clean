@@ -188,6 +188,10 @@ export async function finalizzaIntervento(
 
   revalidatePath("/archivio");
   revalidatePath(`/archivio/${id}`);
+  // Un trigger sul database chiude da solo l'eventuale incarico pianificato
+  // corrispondente: la sua lista e la dashboard vanno rilette.
+  revalidatePath("/incarichi");
+  revalidatePath("/panoramica");
   return { successo: "Foglio inviato definitivamente: non è più modificabile." };
 }
 

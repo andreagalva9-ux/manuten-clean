@@ -45,6 +45,7 @@ export async function creaIncarico(
   if (error) return { errore: messaggioErrore(error) };
 
   revalidatePath("/incarichi");
+  revalidatePath("/panoramica");
   return { successo: "Incarico assegnato." };
 }
 
@@ -62,6 +63,7 @@ export async function eliminaIncarico(
   if (error) return { errore: messaggioErrore(error) };
 
   revalidatePath("/incarichi");
+  revalidatePath("/panoramica");
   return { successo: "Incarico eliminato." };
 }
 
@@ -88,5 +90,6 @@ export async function segnaIncarico(
   if (error) return { errore: messaggioErrore(error) };
 
   revalidatePath("/incarichi");
+  revalidatePath("/panoramica");
   return { successo: completato ? "Segnato come fatto." : "Riaperto." };
 }
