@@ -2,19 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 
-import { richiediProfilo, richiediUfficio } from "@/lib/auth";
+import { richiediPianificazione, richiediProfilo } from "@/lib/auth";
 import { isTipoCommessa } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
 export type StatoIncarico = { errore?: string; successo?: string };
 
-/** L'ufficio pianifica: cliente + tecnico + tipo di lavorazione + scadenza. */
+/** Ufficio o pianificatore: cliente + tecnico + tipo di lavorazione + scadenza. */
 export async function creaIncarico(
   _stato: StatoIncarico,
   formData: FormData,
 ): Promise<StatoIncarico> {
-  const ufficio = await richiediUfficio();
+  const pianificatore = await richiediPianificazione();
 
   const clientId = String(formData.get("client_id") ?? "");
   const tecnicoId = String(formData.get("tecnico_id") ?? "");
@@ -39,7 +39,7 @@ export async function creaIncarico(
     tipo,
     scadenza,
     note,
-    creato_da: ufficio.id,
+    creato_da: pianificatore.id,
   });
 
   if (error) return { errore: messaggioErrore(error) };
@@ -52,7 +52,7 @@ export async function eliminaIncarico(
   _stato: StatoIncarico,
   formData: FormData,
 ): Promise<StatoIncarico> {
-  await richiediUfficio();
+  await richiediPianificazione();
   const id = String(formData.get("id") ?? "");
   if (!id) return { errore: "Incarico non identificato." };
 

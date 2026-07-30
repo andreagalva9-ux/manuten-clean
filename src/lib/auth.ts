@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { puoVedereTutto, type Profilo } from "@/lib/dominio";
+import { puoPianificare, puoVedereTutto, type Profilo } from "@/lib/dominio";
 import { createClient } from "@/lib/supabase/server";
 
 /** Profilo dell'utente loggato, o null se la sessione non è valida. */
@@ -46,7 +46,16 @@ export async function richiediVisibilitaCompleta(): Promise<Profilo> {
   return profilo;
 }
 
+/** Azioni di pianificazione (incarichi): ufficio o pianificatore. */
+export async function richiediPianificazione(): Promise<Profilo> {
+  const profilo = await richiediProfilo();
+  if (!puoPianificare(profilo)) redirect("/incarichi");
+  return profilo;
+}
+
 /** Home di destinazione dopo il login, in base al ruolo. */
 export function homePerRuolo(ruolo: string) {
-  return ruolo === "tecnico" ? "/nuovo" : "/archivio";
+  if (ruolo === "tecnico") return "/nuovo";
+  if (ruolo === "pianificatore") return "/incarichi";
+  return "/archivio";
 }

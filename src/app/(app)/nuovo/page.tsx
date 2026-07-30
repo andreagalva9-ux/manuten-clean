@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { FormIntervento } from "@/app/(app)/nuovo/form-intervento";
 import { Avviso, StatoVuoto } from "@/components/ui";
 import { richiediProfilo } from "@/lib/auth";
-import { isSupervisore } from "@/lib/dominio";
+import { puoCompilare } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,8 +16,8 @@ export default async function PaginaNuovo({
   searchParams: Promise<{ client_id?: string; tipo?: string }>;
 }) {
   const profilo = await richiediProfilo();
-  // Chi è in sola supervisione non compila fogli, solo consultazione.
-  if (isSupervisore(profilo)) redirect("/archivio");
+  // Supervisore e pianificatore non compilano fogli, solo consultazione.
+  if (!puoCompilare(profilo)) redirect("/archivio");
   const { client_id: clientIdIniziale, tipo: tipoIniziale } = await searchParams;
   const supabase = await createClient();
 

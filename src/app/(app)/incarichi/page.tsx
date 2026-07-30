@@ -1,7 +1,7 @@
 import { GestioneIncarichi } from "@/app/(app)/incarichi/gestione-incarichi";
 import { Avviso } from "@/components/ui";
 import { richiediProfilo } from "@/lib/auth";
-import { isSupervisore, isUfficio, puoVedereTutto } from "@/lib/dominio";
+import { isSupervisore, puoPianificare, puoVedereTutto } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
@@ -59,7 +59,7 @@ export default async function PaginaIncarichi() {
       incarichi={incarichi ?? []}
       clienti={clienti}
       tecnici={tecnici}
-      puoGestire={isUfficio(profilo)}
+      puoGestire={puoPianificare(profilo)}
       puoSegnare={!isSupervisore(profilo)}
     />
   );

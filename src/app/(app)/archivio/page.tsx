@@ -7,8 +7,8 @@ import {
   codiceCommessa,
   formattaData,
   formattaOre,
-  isSupervisore,
   isUfficio,
+  puoCompilare,
   puoVedereTutto,
 } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
@@ -89,7 +89,7 @@ export default async function PaginaArchivio({
             {!puoVedereTutto(profilo) && " visibili al tuo profilo"}
           </p>
         </div>
-        {!isSupervisore(profilo) && (
+        {puoCompilare(profilo) && (
           <BottoneLink href="/nuovo" className="shrink-0">
             Nuovo foglio
           </BottoneLink>

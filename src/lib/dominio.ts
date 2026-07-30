@@ -67,7 +67,12 @@ export const AZIENDA = {
   pec: "manutenclean2srl@sicurezzapostale.it",
 } as const;
 
-export const RUOLI = ["ufficio", "tecnico", "supervisore"] as const;
+export const RUOLI = [
+  "ufficio",
+  "tecnico",
+  "supervisore",
+  "pianificatore",
+] as const;
 export type Ruolo = (typeof RUOLI)[number];
 
 export function isRuolo(valore: unknown): valore is Ruolo {
@@ -97,11 +102,32 @@ export function isSupervisore(
   return profilo?.ruolo === "supervisore";
 }
 
+/** Gestisce solo la pianificazione (incarichi dei tecnici), il resto in lettura. */
+export function isPianificatore(
+  profilo: Pick<Profilo, "ruolo"> | null | undefined,
+) {
+  return profilo?.ruolo === "pianificatore";
+}
+
 /** Chi vede l'intero archivio e le pagine di gestione, in scrittura o sola lettura. */
 export function puoVedereTutto(
   profilo: Pick<Profilo, "ruolo"> | null | undefined,
 ) {
-  return isUfficio(profilo) || isSupervisore(profilo);
+  return isUfficio(profilo) || isSupervisore(profilo) || isPianificatore(profilo);
+}
+
+/** Chi compila fogli di lavoro: supervisore e pianificatore restano fuori. */
+export function puoCompilare(
+  profilo: Pick<Profilo, "ruolo"> | null | undefined,
+) {
+  return profilo?.ruolo === "tecnico" || isUfficio(profilo);
+}
+
+/** Chi crea/modifica/elimina gli incarichi pianificati. */
+export function puoPianificare(
+  profilo: Pick<Profilo, "ruolo"> | null | undefined,
+) {
+  return isUfficio(profilo) || isPianificatore(profilo);
 }
 
 /** Il compilatore o l'ufficio possono archiviare il foglio. */

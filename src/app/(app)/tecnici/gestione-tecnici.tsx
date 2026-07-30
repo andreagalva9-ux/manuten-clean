@@ -19,6 +19,7 @@ const ETICHETTA_RUOLO: Record<Ruolo, string> = {
   ufficio: "Ufficio",
   tecnico: "Tecnico",
   supervisore: "Supervisione",
+  pianificatore: "Pianificatore",
 };
 
 export function GestioneTecnici({
@@ -128,6 +129,9 @@ function FormInvito({
             <option value="tecnico">Tecnico</option>
             <option value="ufficio">Ufficio</option>
             <option value="supervisore">Supervisione (sola lettura)</option>
+            <option value="pianificatore">
+              Pianificatore (gestisce solo gli incarichi)
+            </option>
           </select>
         </div>
 
@@ -257,6 +261,7 @@ function RigaUtente({
                 <option value="tecnico">Tecnico</option>
                 <option value="ufficio">Ufficio</option>
                 <option value="supervisore">Supervisione</option>
+                <option value="pianificatore">Pianificatore</option>
               </select>
               <BottoneInvio variante="secondario" inCorso="Attendere…">
                 Cambia ruolo

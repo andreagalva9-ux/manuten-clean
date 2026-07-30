@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { isSupervisore, puoVedereTutto, type Profilo } from "@/lib/dominio";
+import { puoCompilare, puoVedereTutto, type Profilo } from "@/lib/dominio";
 
 type Voce = { href: string; etichetta: string; icona: React.ReactNode };
 
@@ -27,8 +27,8 @@ function Icona({ d }: { d: string }) {
 function vociPerRuolo(profilo: Profilo): Voce[] {
   const voci: Voce[] = [];
 
-  // Chi è in sola supervisione non compila fogli: consulta solo l'archivio.
-  if (!isSupervisore(profilo)) {
+  // Supervisore e pianificatore non compilano fogli: niente voce "Nuovo".
+  if (puoCompilare(profilo)) {
     voci.push({
       href: "/nuovo",
       etichetta: "Nuovo",
