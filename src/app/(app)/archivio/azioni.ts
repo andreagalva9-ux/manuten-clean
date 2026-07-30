@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { richiediProfilo, richiediUfficio } from "@/lib/auth";
-import { puoEliminare, puoModificare } from "@/lib/dominio";
+import { AZIENDA, formattaData, puoEliminare, puoModificare } from "@/lib/dominio";
+import { corpoEmail, inviaEmail } from "@/lib/email";
 import { messaggioErrore } from "@/lib/errori";
 import { leggiFirma } from "@/lib/firme";
+import { generaPdfFoglio } from "@/lib/pdf/genera";
 import { createClient } from "@/lib/supabase/server";
 
 export type StatoArchivio = { errore?: string; successo?: string };
@@ -186,13 +188,78 @@ export async function finalizzaIntervento(
 
   if (error) return { errore: messaggioErrore(error) };
 
+  const esitoInvio = await inviaFoglioAlCliente(id);
+
   revalidatePath("/archivio");
   revalidatePath(`/archivio/${id}`);
   // Un trigger sul database chiude da solo l'eventuale incarico pianificato
   // corrispondente: la sua lista e la dashboard vanno rilette.
   revalidatePath("/incarichi");
   revalidatePath("/panoramica");
-  return { successo: "Foglio inviato definitivamente: non è più modificabile." };
+  return {
+    successo: `Foglio inviato definitivamente: non è più modificabile. ${esitoInvio}`,
+  };
+}
+
+/**
+ * Recapita al cliente il PDF del foglio firmato. Restituisce sempre una frase
+ * da accodare al messaggio di conferma: l'invio della copia è un servizio in
+ * più e non deve far sembrare fallita la finalizzazione se la posta non parte
+ * o se il cliente non ha un indirizzo in anagrafica.
+ */
+async function inviaFoglioAlCliente(id: string): Promise<string> {
+  try {
+    const pdf = await generaPdfFoglio(id);
+    if (!pdf) return "Copia al cliente non inviata: foglio non rileggibile.";
+
+    const supabase = await createClient();
+    const { data: intervento } = await supabase
+      .from("interventi")
+      .select("client_id, data")
+      .eq("id", id)
+      .maybeSingle();
+
+    const { data: cliente } = intervento
+      ? await supabase
+          .from("clients")
+          .select("nome, email")
+          .eq("id", intervento.client_id)
+          .maybeSingle()
+      : { data: null };
+
+    if (!cliente?.email) {
+      return "Nessuna email in anagrafica per questo cliente: la copia non è stata inviata.";
+    }
+
+    const contenuto = `
+      <p style="margin:0 0 16px;font-size:14px;color:#334155">
+        Gentile ${cliente.nome},<br />
+        in allegato trova il foglio di lavoro firmato relativo all'intervento eseguito.
+      </p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;color:#0f172a">
+        <tr><td style="padding:6px 0;color:#64748b;width:120px">Commessa</td><td style="padding:6px 0;font-weight:600">${pdf.codice}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">Lavorazione</td><td style="padding:6px 0">${pdf.tipo}</td></tr>
+        ${intervento ? `<tr><td style="padding:6px 0;color:#64748b">Data</td><td style="padding:6px 0">${formattaData(intervento.data)}</td></tr>` : ""}
+      </table>
+      <p style="margin:20px 0 0;font-size:13px;color:#64748b">
+        Restiamo a disposizione per qualsiasi chiarimento.
+      </p>`;
+
+    const esito = await inviaEmail({
+      a: cliente.email,
+      oggetto: `Foglio di lavoro ${pdf.codice} · ${AZIENDA.nome}`,
+      html: corpoEmail("Il suo foglio di lavoro", contenuto),
+      allegati: [{ filename: pdf.nomeFile, content: pdf.buffer }],
+    });
+
+    return esito.inviata
+      ? `Copia inviata a ${cliente.email}.`
+      : `Copia al cliente non inviata (${esito.errore}).`;
+  } catch (errore) {
+    return `Copia al cliente non inviata (${
+      errore instanceof Error ? errore.message : "errore imprevisto"
+    }).`;
+  }
 }
 
 /** Solo l'ufficio può riaprire un foglio già inviato definitivamente. */
