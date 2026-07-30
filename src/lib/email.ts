@@ -1,14 +1,47 @@
 import { AZIENDA } from "@/lib/dominio";
+import { createAdminClient } from "@/lib/supabase/server";
 
 const ENDPOINT = "https://api.resend.com/emails";
+
+/** Evita di interrogare il database a ogni email inviata. */
+const cacheImpostazioni = new Map<string, string | null>();
+
+/**
+ * Le impostazioni di invio stanno nelle variabili d'ambiente; in mancanza si
+ * leggono dalla tabella riservata `impostazioni` su Supabase, raggiungibile
+ * solo con la chiave service_role. Serve a poter configurare le notifiche
+ * senza accesso al pannello di hosting.
+ */
+async function impostazione(nome: string): Promise<string | null> {
+  const daAmbiente = process.env[nome];
+  if (daAmbiente) return daAmbiente;
+
+  if (cacheImpostazioni.has(nome)) return cacheImpostazioni.get(nome) ?? null;
+
+  const admin = createAdminClient();
+  if (!admin) return null;
+
+  const { data } = await admin
+    .from("impostazioni")
+    .select("valore")
+    .eq("chiave", nome)
+    .maybeSingle();
+
+  const valore = data?.valore ?? null;
+  cacheImpostazioni.set(nome, valore);
+  return valore;
+}
 
 /**
  * Mittente delle notifiche. Richiede che il dominio sia verificato su Resend;
  * finché non lo è, Resend accetta solo `onboarding@resend.dev` e consegna
  * unicamente all'indirizzo del titolare dell'account.
  */
-function mittente() {
-  return process.env.RESEND_FROM ?? `${AZIENDA.nome} <onboarding@resend.dev>`;
+async function mittente() {
+  return (
+    (await impostazione("RESEND_FROM")) ??
+    `${AZIENDA.nome} <onboarding@resend.dev>`
+  );
 }
 
 export type Allegato = { filename: string; content: Buffer };
@@ -31,7 +64,7 @@ export async function inviaEmail({
   html: string;
   allegati?: Allegato[];
 }): Promise<Esito> {
-  const chiave = process.env.RESEND_API_KEY;
+  const chiave = await impostazione("RESEND_API_KEY");
   if (!chiave) {
     return { inviata: false, errore: "RESEND_API_KEY non configurata." };
   }
@@ -44,7 +77,7 @@ export async function inviaEmail({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: mittente(),
+        from: await mittente(),
         to: [a],
         subject: oggetto,
         html,

@@ -180,6 +180,24 @@ export type Database = {
           },
         ]
       }
+      impostazioni: {
+        Row: {
+          chiave: string
+          updated_at: string
+          valore: string
+        }
+        Insert: {
+          chiave: string
+          updated_at?: string
+          valore: string
+        }
+        Update: {
+          chiave?: string
+          updated_at?: string
+          valore?: string
+        }
+        Relationships: []
+      }
       interventi: {
         Row: {
           aree_intervento: string | null
