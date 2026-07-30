@@ -130,18 +130,26 @@ export function puoPianificare(
   return isUfficio(profilo) || isPianificatore(profilo);
 }
 
-/** Il compilatore o l'ufficio possono archiviare il foglio. */
+/**
+ * Il compilatore o l'ufficio possono archiviare il foglio. Chi è passato a
+ * supervisore o pianificatore resta in sola lettura anche sui fogli che
+ * aveva compilato quando era tecnico.
+ */
 export function puoEliminare(
   intervento: Pick<Intervento, "compilato_da">,
   profilo: Pick<Profilo, "id" | "ruolo"> | null | undefined,
 ) {
   if (!profilo) return false;
-  return isUfficio(profilo) || intervento.compilato_da === profilo.id;
+  if (isUfficio(profilo)) return true;
+  if (isSupervisore(profilo) || isPianificatore(profilo)) return false;
+  return intervento.compilato_da === profilo.id;
 }
 
 /**
- * Una volta inviato definitivamente, solo l'ufficio può ancora modificarlo:
- * il tecnico (compilatore o assegnato) perde il diritto di modifica.
+ * Una volta inviato definitivamente, solo l'ufficio può ancora modificarlo
+ * (ed è l'unico che può riaprirlo): il tecnico, compilatore o assegnato che
+ * sia, perde il diritto di modifica. Supervisore e pianificatore restano in
+ * sola lettura anche se figurano tra i tecnici assegnati.
  */
 export function puoModificare(
   intervento: Pick<
@@ -152,6 +160,7 @@ export function puoModificare(
 ) {
   if (!profilo) return false;
   if (isUfficio(profilo)) return true;
+  if (isSupervisore(profilo) || isPianificatore(profilo)) return false;
   if (intervento.finalizzato_at) return false;
   return (
     intervento.compilato_da === profilo.id ||
