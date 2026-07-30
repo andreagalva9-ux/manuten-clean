@@ -23,6 +23,9 @@ export type PdfFoglio = {
   codice: string;
   tipo: string;
   numero: number;
+  data: string;
+  ore: number | null;
+  tecnici: string[];
   cliente: { nome: string; indirizzo: string | null } | null;
 };
 
@@ -90,6 +93,9 @@ export async function generaPdfFoglio(id: string): Promise<PdfFoglio | null> {
     codice,
     tipo: intervento.tipo,
     numero: intervento.numero,
+    data: intervento.data,
+    ore: intervento.ore,
+    tecnici: dati.tecnici,
     cliente: intervento.cliente,
   };
 }

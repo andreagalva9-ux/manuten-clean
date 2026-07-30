@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import { richiediProfilo, richiediUfficio } from "@/lib/auth";
-import { AZIENDA, formattaData, puoEliminare, puoModificare } from "@/lib/dominio";
-import { corpoEmail, inviaEmail } from "@/lib/email";
+import { puoEliminare, puoModificare } from "@/lib/dominio";
+import { inviaEmail } from "@/lib/email/invio";
+import { templateFoglioCliente } from "@/lib/email/template";
 import { messaggioErrore } from "@/lib/errori";
 import { leggiFirma } from "@/lib/firme";
 import { generaPdfFoglio } from "@/lib/pdf/genera";
@@ -215,7 +216,7 @@ async function inviaFoglioAlCliente(id: string): Promise<string> {
     const supabase = await createClient();
     const { data: intervento } = await supabase
       .from("interventi")
-      .select("client_id, data")
+      .select("client_id")
       .eq("id", id)
       .maybeSingle();
 
@@ -231,24 +232,16 @@ async function inviaFoglioAlCliente(id: string): Promise<string> {
       return "Nessuna email in anagrafica per questo cliente: la copia non è stata inviata.";
     }
 
-    const contenuto = `
-      <p style="margin:0 0 16px;font-size:14px;color:#334155">
-        Gentile ${cliente.nome},<br />
-        in allegato trova il foglio di lavoro firmato relativo all'intervento eseguito.
-      </p>
-      <table style="width:100%;border-collapse:collapse;font-size:14px;color:#0f172a">
-        <tr><td style="padding:6px 0;color:#64748b;width:120px">Commessa</td><td style="padding:6px 0;font-weight:600">${pdf.codice}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b">Lavorazione</td><td style="padding:6px 0">${pdf.tipo}</td></tr>
-        ${intervento ? `<tr><td style="padding:6px 0;color:#64748b">Data</td><td style="padding:6px 0">${formattaData(intervento.data)}</td></tr>` : ""}
-      </table>
-      <p style="margin:20px 0 0;font-size:13px;color:#64748b">
-        Restiamo a disposizione per qualsiasi chiarimento.
-      </p>`;
-
     const esito = await inviaEmail({
       a: cliente.email,
-      oggetto: `Foglio di lavoro ${pdf.codice} · ${AZIENDA.nome}`,
-      html: corpoEmail("Il suo foglio di lavoro", contenuto),
+      messaggio: templateFoglioCliente({
+        cliente: cliente.nome,
+        codice: pdf.codice,
+        tipo: pdf.tipo,
+        data: pdf.data,
+        ore: pdf.ore,
+        tecnici: pdf.tecnici,
+      }),
       allegati: [{ filename: pdf.nomeFile, content: pdf.buffer }],
     });
 

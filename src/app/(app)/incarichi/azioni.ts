@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { richiediPianificazione, richiediProfilo } from "@/lib/auth";
-import { corpoEmail, inviaEmail } from "@/lib/email";
-import { formattaData, isTipoCommessa } from "@/lib/dominio";
+import { isTipoCommessa, oggiISO } from "@/lib/dominio";
+import { inviaEmail } from "@/lib/email/invio";
+import { templateNuovoIncarico } from "@/lib/email/template";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
-import { urlBase } from "@/lib/url";
 
 export type StatoIncarico = { errore?: string; successo?: string };
 
@@ -92,28 +92,17 @@ async function avvisaTecnico({
     return "Nessuna email in anagrafica per questo tecnico: avvisalo tu.";
   }
 
-  const base = urlBase();
-  const contenuto = `
-    <p style="margin:0 0 16px;font-size:14px;color:#334155">
-      Ciao ${tecnico.nome.split(" ")[0]}, ti è stato assegnato un nuovo intervento.
-    </p>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;color:#0f172a">
-      <tr><td style="padding:6px 0;color:#64748b;width:120px">Cliente</td><td style="padding:6px 0;font-weight:600">${cliente?.nome ?? "—"}</td></tr>
-      ${cliente?.indirizzo ? `<tr><td style="padding:6px 0;color:#64748b">Indirizzo</td><td style="padding:6px 0">${cliente.indirizzo}</td></tr>` : ""}
-      <tr><td style="padding:6px 0;color:#64748b">Lavorazione</td><td style="padding:6px 0">${tipo}</td></tr>
-      <tr><td style="padding:6px 0;color:#64748b">Da fare entro</td><td style="padding:6px 0;font-weight:600">${formattaData(scadenza)}</td></tr>
-      ${note ? `<tr><td style="padding:6px 0;color:#64748b">Note</td><td style="padding:6px 0">${note}</td></tr>` : ""}
-    </table>
-    ${
-      base
-        ? `<p style="margin:24px 0 0"><a href="${base}/incarichi" style="display:inline-block;background:#086660;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600">Apri i tuoi incarichi</a></p>`
-        : ""
-    }`;
-
   const esito = await inviaEmail({
     a: tecnico.email,
-    oggetto: `Nuovo incarico: ${cliente?.nome ?? "cliente"} · ${tipo}`,
-    html: corpoEmail("Nuovo incarico assegnato", contenuto),
+    messaggio: templateNuovoIncarico({
+      tecnico: tecnico.nome,
+      cliente: cliente?.nome ?? "Cliente",
+      indirizzo: cliente?.indirizzo ?? null,
+      tipo,
+      scadenza,
+      note,
+      inRitardo: scadenza < oggiISO(),
+    }),
   });
 
   return esito.inviata
