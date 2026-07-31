@@ -11,7 +11,7 @@ import { richiediProfilo } from "@/lib/auth";
 import {
   formattaData,
   isPianificatore,
-  isSupervisore,
+  isUfficio,
   oggiISO,
   type Profilo,
 } from "@/lib/dominio";
@@ -48,6 +48,14 @@ type IncaricoAperto = {
 export default async function PaginaPanoramica() {
   const profilo = await richiediProfilo();
   const supabase = await createClient();
+
+  // L'ufficio non ha accesso alla pianificazione: la sua dashboard racconta
+  // i fogli di lavoro, che è ciò su cui lavora davvero.
+  if (isUfficio(profilo)) {
+    return (
+      <DashboardUfficio profilo={profilo} dati={await caricaDatiUfficio()} />
+    );
+  }
 
   const oggi = oggiISO();
   const inizioMese = inizioMeseISO();
@@ -128,10 +136,75 @@ export default async function PaginaPanoramica() {
   if (isPianificatore(profilo)) {
     return <DashboardPianificatore profilo={profilo} dati={dati} />;
   }
-  if (isSupervisore(profilo)) {
-    return <DashboardSupervisore profilo={profilo} dati={dati} />;
+  // Resta il supervisore: ufficio, tecnico e pianificatore sono già usciti.
+  return <DashboardSupervisore profilo={profilo} dati={dati} />;
+}
+
+type FoglioDelMese = {
+  id: string;
+  tipo: string;
+  finalizzato_at: string | null;
+  cliente: { nome: string } | null;
+};
+
+type DatiUfficio = {
+  meseTotali: number;
+  meseInviati: number;
+  bozze: number;
+  clientiAttivi: number;
+  perTipo: { etichetta: string; valore: number }[];
+  perCliente: { etichetta: string; valore: number }[];
+};
+
+async function caricaDatiUfficio(): Promise<DatiUfficio> {
+  const supabase = await createClient();
+
+  const [{ data: mese }, { count: bozze }, { count: clientiAttivi }] =
+    await Promise.all([
+      supabase
+        .from("interventi")
+        .select("id, tipo, finalizzato_at, cliente:clients(nome)")
+        .is("deleted_at", null)
+        .gte("data", inizioMeseISO())
+        .lte("data", fineMeseISO()),
+      // Le bozze si contano su tutto lo storico, non solo sul mese: una
+      // rimasta indietro a maggio è proprio quella da recuperare.
+      supabase
+        .from("interventi")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
+        .is("finalizzato_at", null),
+      supabase
+        .from("clients")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null),
+    ]);
+
+  const fogli = (mese ?? []) as unknown as FoglioDelMese[];
+
+  return {
+    meseTotali: fogli.length,
+    meseInviati: fogli.filter((f) => f.finalizzato_at).length,
+    bozze: bozze ?? 0,
+    clientiAttivi: clientiAttivi ?? 0,
+    perTipo: conta(fogli, (f) => f.tipo),
+    perCliente: conta(fogli, (f) => f.cliente?.nome ?? "Cliente rimosso"),
+  };
+}
+
+/** Conteggio per chiave, dal più frequente, limitato a quanto sta in un grafico. */
+function conta<T>(voci: T[], chiave: (v: T) => string) {
+  const mappa = new Map<string, number>();
+
+  for (const voce of voci) {
+    const k = chiave(voce);
+    mappa.set(k, (mappa.get(k) ?? 0) + 1);
   }
-  return <DashboardUfficio profilo={profilo} dati={dati} />;
+
+  return [...mappa.entries()]
+    .map(([etichetta, valore]) => ({ etichetta, valore }))
+    .sort((a, b) => b.valore - a.valore)
+    .slice(0, 6);
 }
 
 /** Conta gli incarichi per chiave, tenendo separata la quota già scaduta. */
@@ -306,71 +379,75 @@ function DashboardPianificatore({
   );
 }
 
-function DashboardUfficio({ profilo, dati }: { profilo: Profilo; dati: Dati }) {
+function DashboardUfficio({
+  profilo,
+  dati,
+}: {
+  profilo: Profilo;
+  dati: DatiUfficio;
+}) {
   return (
     <div className="flex flex-col gap-5">
       <Intestazione
         titolo={`Ciao ${primoNome(profilo.nome)}`}
-        sottotitolo="Lo stato del lavoro assegnato ai tecnici."
+        sottotitolo="I fogli di lavoro che arrivano dai tecnici."
       />
 
       <Indicatori
         voci={[
-          { etichetta: "Incarichi aperti", valore: dati.aperti.length, href: "/incarichi" },
           {
-            etichetta: "In ritardo",
-            valore: dati.inRitardo.length,
-            href: "/incarichi",
-            allarme: dati.inRitardo.length > 0,
+            etichetta: "Fogli del mese",
+            valore: dati.meseTotali,
+            href: "/archivio",
           },
-          { etichetta: "Completati nel mese", valore: dati.meseCompletati, href: "/incarichi" },
+          {
+            etichetta: "Ancora da inviare",
+            valore: dati.bozze,
+            href: "/archivio",
+            allarme: dati.bozze > 0,
+          },
+          {
+            etichetta: "Clienti attivi",
+            valore: dati.clientiAttivi,
+            href: "/clienti",
+          },
         ]}
       />
 
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Scheda
-            titolo="Scadenze"
-            sottotitolo="Incarichi aperti per urgenza"
-            azione={{ href: "/incarichi", etichetta: "Vedi tutti" }}
+            titolo="Per tipo di lavorazione"
+            sottotitolo="Fogli con data in questo mese"
+            azione={{ href: "/archivio", etichetta: "Archivio" }}
           >
-            <GraficoScadenze fasce={dati.fasce} />
+            <GraficoBarre
+              voci={dati.perTipo}
+              vuoto="Nessun foglio compilato questo mese."
+            />
           </Scheda>
         </div>
-        <Scheda titolo="Avanzamento del mese">
+        <Scheda titolo="Chiusura del mese">
           <Anello
-            completati={dati.meseCompletati}
+            completati={dati.meseInviati}
             totali={dati.meseTotali}
-            etichetta="Incarichi con scadenza in questo mese"
+            etichetta="Fogli del mese già inviati definitivamente"
           />
         </Scheda>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Scheda titolo="Carico per tecnico" sottotitolo="Incarichi aperti assegnati">
-          <GraficoBarre
-            voci={dati.perTecnico}
-            vuoto="Nessun incarico assegnato al momento."
-          />
-        </Scheda>
-        <Scheda titolo="Per tipo di lavorazione" sottotitolo="Incarichi aperti">
-          <GraficoBarre voci={dati.perTipo} vuoto="Nessun incarico aperto." />
-        </Scheda>
-      </div>
-
-      <ListaIncarichi
-        titolo="Prossime scadenze"
-        incarichi={dati.prossimi}
-        mostraTecnico
-        vuoto="Nessun incarico aperto."
-      />
+      <Scheda titolo="Per cliente" sottotitolo="Fogli con data in questo mese">
+        <GraficoBarre
+          voci={dati.perCliente}
+          vuoto="Nessun foglio compilato questo mese."
+        />
+      </Scheda>
 
       <AzioniRapide
         azioni={[
-          { href: "/nuovo", etichetta: "Nuovo foglio", primaria: true },
-          { href: "/archivio", etichetta: "Archivio" },
+          { href: "/archivio", etichetta: "Archivio fogli", primaria: true },
           { href: "/clienti", etichetta: "Clienti" },
-          { href: "/tecnici", etichetta: "Tecnici" },
+          { href: "/tecnici", etichetta: "Utenti" },
         ]}
       />
     </div>

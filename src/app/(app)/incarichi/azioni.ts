@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type StatoIncarico = { errore?: string; successo?: string };
 
-/** Ufficio o pianificatore: cliente + tecnico + tipo di lavorazione + scadenza. */
+/** Solo il pianificatore: cliente + tecnico + tipo di lavorazione + scadenza. */
 export async function creaIncarico(
   _stato: StatoIncarico,
   formData: FormData,
@@ -65,8 +65,8 @@ export async function creaIncarico(
 
 /**
  * Avvisa via email il tecnico del nuovo incarico. Restituisce un messaggio
- * da mostrare all'ufficio solo quando la notifica NON è partita: l'incarico
- * è comunque salvato, va solo avvisato a voce.
+ * da mostrare al pianificatore solo quando la notifica NON è partita:
+ * l'incarico è comunque salvato, va solo avvisato a voce.
  */
 async function avvisaTecnico({
   tecnicoId,
@@ -129,9 +129,9 @@ export async function eliminaIncarico(
 }
 
 /**
- * Il tecnico spunta il proprio incarico come fatto (o lo riapre): l'RLS e il
- * trigger sul database impediscono comunque di toccare cliente, tecnico,
- * tipo o scadenza se non si è ufficio.
+ * Il tecnico spunta il proprio incarico come fatto: l'RLS e il trigger sul
+ * database impediscono comunque di toccare cliente, tecnico, tipo o
+ * scadenza se non si è il pianificatore.
  */
 export async function segnaIncarico(
   _stato: StatoIncarico,
@@ -147,7 +147,7 @@ export async function segnaIncarico(
   if (!completato && !puoPianificare(profilo)) {
     return {
       errore:
-        "Un incarico già completato può essere riaperto solo dall'ufficio.",
+        "Un incarico già completato può essere riaperto solo dal pianificatore.",
     };
   }
 

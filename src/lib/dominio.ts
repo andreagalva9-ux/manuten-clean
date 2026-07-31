@@ -115,22 +115,48 @@ export function puoVedereTutto(
   return isUfficio(profilo) || isSupervisore(profilo) || isPianificatore(profilo);
 }
 
-/** Chi compila fogli di lavoro: supervisore e pianificatore restano fuori. */
+/**
+ * Chi compila fogli di lavoro: solo il tecnico, che è l'unico presente
+ * sul posto. L'ufficio non ne crea di nuovi — può però correggere e
+ * riaprire quelli esistenti, vedi puoModificare.
+ */
 export function puoCompilare(
   profilo: Pick<Profilo, "ruolo"> | null | undefined,
 ) {
-  return profilo?.ruolo === "tecnico" || isUfficio(profilo);
+  return profilo?.ruolo === "tecnico";
 }
 
 /**
  * Chi crea/modifica/elimina gli incarichi pianificati: solo il pianificatore.
- * L'ufficio ne ha visibilità completa ma non li gestisce; se serve spostare
- * la pianificazione, l'ufficio può assegnare il ruolo a un altro utente.
+ * Se serve spostare la pianificazione, l'ufficio assegna il ruolo a un altro
+ * utente dalla pagina Utenti.
  */
 export function puoPianificare(
   profilo: Pick<Profilo, "ruolo"> | null | undefined,
 ) {
   return isPianificatore(profilo);
+}
+
+/**
+ * Chi accede alla pianificazione. L'ufficio ne resta fuori: gli incarichi
+ * sono materia del pianificatore, il supervisore li osserva e il tecnico
+ * vede soltanto i propri.
+ */
+export function puoVedereIncarichi(
+  profilo: Pick<Profilo, "ruolo"> | null | undefined,
+) {
+  return (
+    isPianificatore(profilo) ||
+    isSupervisore(profilo) ||
+    profilo?.ruolo === "tecnico"
+  );
+}
+
+/** Chi vede l'intera pianificazione e non solo gli incarichi propri. */
+export function puoVedereTuttiGliIncarichi(
+  profilo: Pick<Profilo, "ruolo"> | null | undefined,
+) {
+  return isPianificatore(profilo) || isSupervisore(profilo);
 }
 
 /**

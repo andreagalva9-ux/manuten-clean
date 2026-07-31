@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { puoCompilare, puoVedereTutto, type Profilo } from "@/lib/dominio";
+import {
+  puoCompilare,
+  puoVedereIncarichi,
+  puoVedereTutto,
+  type Profilo,
+} from "@/lib/dominio";
 
 type Voce = { href: string; etichetta: string; icona: React.ReactNode };
 
@@ -35,7 +40,7 @@ function vociPerRuolo(profilo: Profilo): Voce[] {
     },
   ];
 
-  // Supervisore e pianificatore non compilano fogli: niente voce "Nuovo".
+  // Compila solo il tecnico: per gli altri ruoli niente voce "Nuovo".
   if (puoCompilare(profilo)) {
     voci.push({
       href: "/nuovo",
@@ -44,13 +49,16 @@ function vociPerRuolo(profilo: Profilo): Voce[] {
     });
   }
 
-  voci.push({
-    href: "/incarichi",
-    etichetta: "Incarichi",
-    icona: (
-      <Icona d="M9 11l3 3L22 4M6 12v7a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1h-5" />
-    ),
-  });
+  // La pianificazione non riguarda l'ufficio.
+  if (puoVedereIncarichi(profilo)) {
+    voci.push({
+      href: "/incarichi",
+      etichetta: "Incarichi",
+      icona: (
+        <Icona d="M9 11l3 3L22 4M6 12v7a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1h-5" />
+      ),
+    });
+  }
 
   // Il tecnico non entra nell'archivio generale: consulta i propri fogli.
   voci.push({
