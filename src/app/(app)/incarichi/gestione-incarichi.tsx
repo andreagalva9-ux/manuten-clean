@@ -9,8 +9,27 @@ import {
   segnaIncarico,
   type StatoIncarico,
 } from "@/app/(app)/incarichi/azioni";
+import {
+  GraficoCaricoTecnici,
+  type CaricoTecnico,
+} from "@/app/(app)/incarichi/grafico-carico";
 import { Avviso, Bottone, BottoneInvio, Etichetta } from "@/components/ui";
 import { formattaData, oggiISO, TIPI_COMMESSA } from "@/lib/dominio";
+
+/** Fasce di urgenza, usate sia dal grafico sia dai filtri dell'elenco. */
+type Urgenza = "inRitardo" | "inScadenza" | "piuAvanti";
+
+function traGiorniISO(giorni: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + giorni);
+  return d.toISOString().slice(0, 10);
+}
+
+function urgenzaDi(scadenza: string, oggi: string, traSette: string): Urgenza {
+  if (scadenza < oggi) return "inRitardo";
+  if (scadenza <= traSette) return "inScadenza";
+  return "piuAvanti";
+}
 
 type ClienteBase = { id: string; nome: string };
 type TecnicoBase = { id: string; nome: string };
@@ -33,32 +52,74 @@ export function GestioneIncarichi({
   clienti,
   tecnici,
   puoGestire,
-  puoSegnare,
+  eTecnico,
+  vedeTutti,
 }: {
   incarichi: IncaricoRiga[];
   clienti: ClienteBase[];
   tecnici: TecnicoBase[];
+  /** Pianificatore: crea ed elimina. */
   puoGestire: boolean;
-  puoSegnare: boolean;
+  /** Tecnico: compila il foglio e spunta come fatto. */
+  eTecnico: boolean;
+  /** Pianificatore e supervisore: vedono il carico di tutti. */
+  vedeTutti: boolean;
 }) {
   const [nuovoAperto, setNuovoAperto] = useState(false);
   const [mostraCompletati, setMostraCompletati] = useState(false);
+  const [tecnicoScelto, setTecnicoScelto] = useState<string | null>(null);
+  const [urgenzaScelta, setUrgenzaScelta] = useState<Urgenza | null>(null);
+
+  const oggi = oggiISO();
+  const traSette = traGiorniISO(7);
 
   const daFare = incarichi.filter((i) => !i.completato_at);
   const completati = incarichi.filter((i) => i.completato_at);
 
-  // Raggruppa per tecnico solo quando si vedono gli incarichi di tutti
-  // (l'ufficio): rispecchia il "5 a uno, 5 a un altro" fatto finora sulla
-  // carta, invece di un unico elenco indistinto.
-  const perTecnico = puoGestire
-    ? Object.entries(
-        daFare.reduce<Record<string, IncaricoRiga[]>>((acc, i) => {
-          const chiave = i.tecnico?.nome ?? "Senza tecnico";
-          (acc[chiave] ??= []).push(i);
-          return acc;
-        }, {}),
-      ).sort(([a], [b]) => a.localeCompare(b))
-    : null;
+  // Il carico si calcola sempre su tutti gli incarichi aperti, non su quelli
+  // filtrati: il grafico deve continuare a mostrare il quadro intero anche
+  // mentre si guarda un singolo tecnico.
+  const carichi: CaricoTecnico[] = Object.values(
+    daFare.reduce<Record<string, CaricoTecnico>>((acc, i) => {
+      const id = i.tecnico?.id ?? "senza-tecnico";
+      acc[id] ??= {
+        id,
+        nome: i.tecnico?.nome ?? "Senza tecnico",
+        inRitardo: 0,
+        inScadenza: 0,
+        piuAvanti: 0,
+        totale: 0,
+      };
+      acc[id][urgenzaDi(i.scadenza, oggi, traSette)] += 1;
+      acc[id].totale += 1;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b.totale - a.totale || a.nome.localeCompare(b.nome));
+
+  const filtrati = daFare.filter((i) => {
+    const idTecnico = i.tecnico?.id ?? "senza-tecnico";
+    if (tecnicoScelto && idTecnico !== tecnicoScelto) return false;
+    if (urgenzaScelta && urgenzaDi(i.scadenza, oggi, traSette) !== urgenzaScelta)
+      return false;
+    return true;
+  });
+
+  // Raggruppa per tecnico quando si vede il lavoro di tutti: rispecchia il
+  // "5 a uno, 5 a un altro" fatto finora sulla carta, invece di un unico
+  // elenco indistinto. Con un tecnico già selezionato il raggruppamento
+  // sarebbe un titolo su un solo gruppo, quindi si salta.
+  const perTecnico =
+    vedeTutti && !tecnicoScelto
+      ? Object.entries(
+          filtrati.reduce<Record<string, IncaricoRiga[]>>((acc, i) => {
+            const chiave = i.tecnico?.nome ?? "Senza tecnico";
+            (acc[chiave] ??= []).push(i);
+            return acc;
+          }, {}),
+        ).sort(([a], [b]) => a.localeCompare(b))
+      : null;
+
+  const filtroAttivo = tecnicoScelto !== null || urgenzaScelta !== null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -70,7 +131,7 @@ export function GestioneIncarichi({
             {completati.length > 0 && ` · ${completati.length} completati`}
           </p>
           <p className="mt-1 text-xs text-slate-400">
-            Gli incarichi si segnano da soli come fatti quando invii
+            Gli incarichi si segnano da soli come fatti quando il tecnico invia
             definitivamente il foglio di lavoro corrispondente.
           </p>
         </div>
@@ -93,10 +154,44 @@ export function GestioneIncarichi({
         />
       )}
 
+      {vedeTutti && daFare.length > 0 && (
+        <GraficoCaricoTecnici
+          carichi={carichi}
+          selezionato={tecnicoScelto}
+          onSeleziona={setTecnicoScelto}
+        />
+      )}
+
+      {daFare.length > 0 && (
+        <FiltroUrgenza
+          incarichi={daFare}
+          oggi={oggi}
+          traSette={traSette}
+          scelta={urgenzaScelta}
+          onScegli={setUrgenzaScelta}
+        />
+      )}
+
       {daFare.length === 0 ? (
         <p className="py-6 text-center text-sm text-slate-500">
           Nessun incarico da fare al momento.
         </p>
+      ) : filtrati.length === 0 ? (
+        <div className="py-6 text-center">
+          <p className="text-sm text-slate-500">
+            Nessun incarico con questi filtri.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setTecnicoScelto(null);
+              setUrgenzaScelta(null);
+            }}
+            className="mt-2 text-sm font-medium text-brand-700 hover:underline"
+          >
+            Togli i filtri
+          </button>
+        </div>
       ) : perTecnico ? (
         <div className="flex flex-col gap-5">
           {perTecnico.map(([nomeTecnico, righe]) => (
@@ -110,7 +205,7 @@ export function GestioneIncarichi({
                     key={i.id}
                     incarico={i}
                     puoGestire={puoGestire}
-                    puoSegnare={puoSegnare}
+                    eTecnico={eTecnico}
                     mostraTecnico={false}
                   />
                 ))}
@@ -120,12 +215,17 @@ export function GestioneIncarichi({
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
-          {daFare.map((i) => (
+          {filtroAttivo && (
+            <li className="text-xs text-slate-500">
+              {filtrati.length} di {daFare.length} incarichi
+            </li>
+          )}
+          {filtrati.map((i) => (
             <RigaIncarico
               key={i.id}
               incarico={i}
               puoGestire={puoGestire}
-              puoSegnare={puoSegnare}
+              eTecnico={eTecnico}
               mostraTecnico={false}
             />
           ))}
@@ -150,8 +250,8 @@ export function GestioneIncarichi({
                   key={i.id}
                   incarico={i}
                   puoGestire={puoGestire}
-                  puoSegnare={puoSegnare}
-                  mostraTecnico={puoGestire}
+                  eTecnico={eTecnico}
+                  mostraTecnico={vedeTutti}
                 />
               ))}
             </ul>
@@ -162,15 +262,72 @@ export function GestioneIncarichi({
   );
 }
 
+/** Chip di filtro per urgenza, con il conteggio di ciascuna fascia. */
+function FiltroUrgenza({
+  incarichi,
+  oggi,
+  traSette,
+  scelta,
+  onScegli,
+}: {
+  incarichi: IncaricoRiga[];
+  oggi: string;
+  traSette: string;
+  scelta: Urgenza | null;
+  onScegli: (u: Urgenza | null) => void;
+}) {
+  const conta = (u: Urgenza) =>
+    incarichi.filter((i) => urgenzaDi(i.scadenza, oggi, traSette) === u).length;
+
+  const voci: { valore: Urgenza | null; etichetta: string; numero: number }[] = [
+    { valore: null, etichetta: "Tutti", numero: incarichi.length },
+    { valore: "inRitardo", etichetta: "In ritardo", numero: conta("inRitardo") },
+    {
+      valore: "inScadenza",
+      etichetta: "Entro 7 giorni",
+      numero: conta("inScadenza"),
+    },
+    { valore: "piuAvanti", etichetta: "Più avanti", numero: conta("piuAvanti") },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {voci.map((voce) => {
+        const attivo = scelta === voce.valore;
+        return (
+          <button
+            key={voce.etichetta}
+            type="button"
+            onClick={() => onScegli(voce.valore)}
+            aria-pressed={attivo}
+            className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+              attivo
+                ? "border-brand-700 bg-brand-700 text-white"
+                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {voce.etichetta}
+            <span
+              className={attivo ? "text-brand-100" : "text-slate-400"}
+            >
+              {voce.numero}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function RigaIncarico({
   incarico,
   puoGestire,
-  puoSegnare,
+  eTecnico,
   mostraTecnico,
 }: {
   incarico: IncaricoRiga;
   puoGestire: boolean;
-  puoSegnare: boolean;
+  eTecnico: boolean;
   mostraTecnico: boolean;
 }) {
   const [statoSegna, azioneSegna] = useActionState<StatoIncarico, FormData>(
@@ -226,7 +383,9 @@ function RigaIncarico({
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {!completato && (
+        {/* Solo il tecnico compila: per gli altri ruoli il collegamento
+            porterebbe a una pagina che non possono aprire. */}
+        {eTecnico && !completato && (
           <Link
             href={`/nuovo?client_id=${incarico.client_id}&tipo=${encodeURIComponent(incarico.tipo)}`}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-800"
@@ -248,7 +407,7 @@ function RigaIncarico({
         {/* La spunta serve solo ai lavori senza foglio: quando il foglio
             c'è, l'incarico si chiude da sé all'invio definitivo. Non si
             torna indietro: un incarico chiuso resta chiuso. */}
-        {puoSegnare && !completato && (
+        {eTecnico && !completato && (
           <form action={azioneSegna}>
             <input type="hidden" name="id" value={incarico.id} />
             <BottoneInvio variante="secondario" inCorso="Attendere…">
