@@ -1,16 +1,20 @@
 import { GestioneIncarichi } from "@/app/(app)/incarichi/gestione-incarichi";
 import { Avviso } from "@/components/ui";
-import { richiediProfilo } from "@/lib/auth";
-import { isSupervisore, puoPianificare, puoVedereTutto } from "@/lib/dominio";
+import { richiediVisibilitaIncarichi } from "@/lib/auth";
+import {
+  isSupervisore,
+  puoPianificare,
+  puoVedereTuttiGliIncarichi,
+} from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Incarichi · Manuten & Clean" };
 
 export default async function PaginaIncarichi() {
-  const profilo = await richiediProfilo();
+  const profilo = await richiediVisibilitaIncarichi();
   const supabase = await createClient();
-  const vedeTutto = puoVedereTutto(profilo);
+  const vedeTutto = puoVedereTuttiGliIncarichi(profilo);
 
   let query = supabase
     .from("incarichi")

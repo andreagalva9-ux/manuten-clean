@@ -7,7 +7,6 @@ import {
   eliminaIntervento,
   finalizzaIntervento,
   ripristinaIntervento,
-  sbloccaIntervento,
   type StatoArchivio,
 } from "@/app/(app)/archivio/azioni";
 import { FirmaTouch } from "@/components/firma-touch";
@@ -67,11 +66,6 @@ export function Dettaglio({
     {},
   );
 
-  const [statoSblocco, azioneSblocco] = useActionState<StatoArchivio, FormData>(
-    sbloccaIntervento,
-    {},
-  );
-
   const eliminato = Boolean(intervento.deleted_at);
   const finalizzato = Boolean(intervento.finalizzato_at);
   const modificabile = puoModificare(intervento, profilo);
@@ -111,10 +105,13 @@ export function Dettaglio({
         </Avviso>
       )}
 
-      {finalizzato && !isUfficio(profilo) && (
+      {finalizzato && !eliminato && (
         <Avviso tipo="info">
           Questo foglio è stato inviato definitivamente e non è più
-          modificabile. Se serve una correzione, chiedi all&apos;ufficio.
+          modificabile da nessuno.
+          {isUfficio(profilo)
+            ? " Se contiene un errore, annullalo e fanne compilare uno nuovo: il numero di commessa resta riservato."
+            : " Se contiene un errore, segnalalo all'ufficio."}
         </Avviso>
       )}
 
@@ -125,10 +122,6 @@ export function Dettaglio({
       {statoInvio.errore && <Avviso>{statoInvio.errore}</Avviso>}
       {statoInvio.successo && (
         <Avviso tipo="successo">{statoInvio.successo}</Avviso>
-      )}
-      {statoSblocco.errore && <Avviso>{statoSblocco.errore}</Avviso>}
-      {statoSblocco.successo && (
-        <Avviso tipo="successo">{statoSblocco.successo}</Avviso>
       )}
 
       {modifica ? (
@@ -436,15 +429,6 @@ export function Dettaglio({
                 </Bottone>
               )}
             </>
-          )}
-
-          {!eliminato && finalizzato && isUfficio(profilo) && (
-            <form action={azioneSblocco}>
-              <input type="hidden" name="id" value={intervento.id} />
-              <BottoneInvio variante="secondario" inCorso="Attendere…">
-                Sblocca per modificare
-              </BottoneInvio>
-            </form>
           )}
 
           {puoEliminare(intervento, profilo) && !eliminato && (

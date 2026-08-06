@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 
-import { puoPianificare, puoVedereTutto, type Profilo } from "@/lib/dominio";
+import {
+  puoPianificare,
+  puoVedereIncarichi,
+  puoVedereTutto,
+  type Profilo,
+} from "@/lib/dominio";
 import { createClient } from "@/lib/supabase/server";
 
 /** Profilo dell'utente loggato, o null se la sessione non è valida. */
@@ -46,10 +51,20 @@ export async function richiediVisibilitaCompleta(): Promise<Profilo> {
   return profilo;
 }
 
-/** Azioni di pianificazione (incarichi): ufficio o pianificatore. */
+/**
+ * Accesso alla pagina Incarichi: pianificatore, supervisore e tecnico.
+ * L'ufficio non vede la pianificazione e viene rimandato alla sua home.
+ */
+export async function richiediVisibilitaIncarichi(): Promise<Profilo> {
+  const profilo = await richiediProfilo();
+  if (!puoVedereIncarichi(profilo)) redirect("/panoramica");
+  return profilo;
+}
+
+/** Azioni di pianificazione (creare, modificare, eliminare incarichi). */
 export async function richiediPianificazione(): Promise<Profilo> {
   const profilo = await richiediProfilo();
-  if (!puoPianificare(profilo)) redirect("/incarichi");
+  if (!puoPianificare(profilo)) redirect("/panoramica");
   return profilo;
 }
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { richiediProfilo } from "@/lib/auth";
-import { isTipoCommessa } from "@/lib/dominio";
+import { isTipoCommessa, puoCompilare } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { leggiFirma } from "@/lib/firme";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +18,12 @@ export async function creaIntervento(
   formData: FormData,
 ): Promise<StatoIntervento> {
   const profilo = await richiediProfilo();
+
+  // Compila solo il tecnico. La policy RLS lo impedirebbe comunque, ma qui
+  // l'errore è comprensibile invece di arrivare dal database.
+  if (!puoCompilare(profilo)) {
+    return { errore: "Solo un tecnico può compilare un foglio di lavoro." };
+  }
 
   const clientId = String(formData.get("client_id") ?? "");
   const tipo = String(formData.get("tipo") ?? "");
