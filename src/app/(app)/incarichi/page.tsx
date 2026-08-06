@@ -60,9 +60,10 @@ export default async function PaginaIncarichi() {
       clienti={clienti}
       tecnici={tecnici}
       puoGestire={puoPianificare(profilo)}
-      // La spunta è solo del tecnico: il pianificatore pianifica, non
-      // dichiara fatto il lavoro altrui.
-      puoSegnare={profilo.ruolo === "tecnico"}
+      // Compilare il foglio e spuntare l'incarico sono del solo tecnico: il
+      // pianificatore pianifica, non dichiara fatto il lavoro altrui.
+      eTecnico={profilo.ruolo === "tecnico"}
+      vedeTutti={vedeTutto}
     />
   );
 }
