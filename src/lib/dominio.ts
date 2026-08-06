@@ -160,9 +160,11 @@ export function puoVedereTuttiGliIncarichi(
 }
 
 /**
- * Il compilatore o l'ufficio possono archiviare il foglio. Chi è passato a
- * supervisore o pianificatore resta in sola lettura anche sui fogli che
- * aveva compilato quando era tecnico.
+ * Il compilatore o l'ufficio possono archiviare il foglio. È l'unica via
+ * di uscita da un foglio già inviato che contiene un errore: si annulla e
+ * se ne emette uno nuovo, mentre il numero di commessa resta bruciato.
+ * Chi è passato a supervisore o pianificatore resta in sola lettura anche
+ * sui fogli che aveva compilato quando era tecnico.
  */
 export function puoEliminare(
   intervento: Pick<Intervento, "compilato_da">,
@@ -175,10 +177,14 @@ export function puoEliminare(
 }
 
 /**
- * Una volta inviato definitivamente, solo l'ufficio può ancora modificarlo
- * (ed è l'unico che può riaprirlo): il tecnico, compilatore o assegnato che
- * sia, perde il diritto di modifica. Supervisore e pianificatore restano in
- * sola lettura anche se figurano tra i tecnici assegnati.
+ * L'invio definitivo chiude il documento per chiunque, ufficio compreso:
+ * un foglio firmato dal cliente non si tocca più, come un modulo cartaceo
+ * già consegnato. Se contiene un errore va annullato (puoEliminare) e
+ * rifatto, così l'archivio non mente mai su cosa è stato firmato.
+ *
+ * Prima dell'invio modificano l'ufficio e i tecnici del foglio; supervisore
+ * e pianificatore restano in sola lettura anche se figurano tra gli
+ * assegnati.
  */
 export function puoModificare(
   intervento: Pick<
@@ -188,9 +194,9 @@ export function puoModificare(
   profilo: Pick<Profilo, "id" | "ruolo"> | null | undefined,
 ) {
   if (!profilo) return false;
+  if (intervento.finalizzato_at) return false;
   if (isUfficio(profilo)) return true;
   if (isSupervisore(profilo) || isPianificatore(profilo)) return false;
-  if (intervento.finalizzato_at) return false;
   return (
     intervento.compilato_da === profilo.id ||
     intervento.tecnici_ids.includes(profilo.id)

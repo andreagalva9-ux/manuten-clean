@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { richiediProfilo, richiediUfficio } from "@/lib/auth";
+import { richiediProfilo } from "@/lib/auth";
 import { puoEliminare, puoModificare } from "@/lib/dominio";
 import { inviaEmail } from "@/lib/email/invio";
 import { templateFoglioCliente } from "@/lib/email/template";
@@ -99,7 +99,7 @@ export async function aggiornaIntervento(
   if (!puoModificare(esistente, profilo)) {
     return {
       errore: esistente.finalizzato_at
-        ? "Questo foglio è stato inviato definitivamente: solo l'ufficio può ancora modificarlo."
+        ? "Questo foglio è stato inviato definitivamente e non è più modificabile da nessuno. Se contiene un errore, annullalo e compilane uno nuovo."
         : "Non hai i permessi per modificare questo foglio.",
     };
   }
@@ -255,24 +255,8 @@ async function inviaFoglioAlCliente(id: string): Promise<string> {
   }
 }
 
-/** Solo l'ufficio può riaprire un foglio già inviato definitivamente. */
-export async function sbloccaIntervento(
-  _stato: StatoArchivio,
-  formData: FormData,
-): Promise<StatoArchivio> {
-  await richiediUfficio();
-  const id = String(formData.get("id") ?? "");
-  if (!id) return { errore: "Foglio non identificato." };
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("interventi")
-    .update({ finalizzato_at: null })
-    .eq("id", id);
-
-  if (error) return { errore: messaggioErrore(error) };
-
-  revalidatePath("/archivio");
-  revalidatePath(`/archivio/${id}`);
-  return { successo: "Foglio sbloccato: torna modificabile." };
-}
+/*
+ * Non esiste una riapertura: l'invio definitivo è definitivo per tutti,
+ * ufficio compreso. Un foglio sbagliato si annulla con eliminaIntervento e
+ * se ne compila uno nuovo.
+ */
