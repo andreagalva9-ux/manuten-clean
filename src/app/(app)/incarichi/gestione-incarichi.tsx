@@ -245,18 +245,14 @@ function RigaIncarico({
           </Link>
         )}
 
-        {/* Riaprire un incarico completato spetta solo a chi pianifica: il
-            tecnico può segnarlo come fatto, non tornare indietro. */}
-        {puoSegnare && (!completato || puoGestire) && (
+        {/* La spunta serve solo ai lavori senza foglio: quando il foglio
+            c'è, l'incarico si chiude da sé all'invio definitivo. Non si
+            torna indietro: un incarico chiuso resta chiuso. */}
+        {puoSegnare && !completato && (
           <form action={azioneSegna}>
             <input type="hidden" name="id" value={incarico.id} />
-            <input
-              type="hidden"
-              name="completato"
-              value={(!completato).toString()}
-            />
             <BottoneInvio variante="secondario" inCorso="Attendere…">
-              {completato ? "Riapri" : "Segna come fatto"}
+              Segna come fatto
             </BottoneInvio>
           </form>
         )}

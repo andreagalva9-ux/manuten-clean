@@ -1,11 +1,7 @@
 import { GestioneIncarichi } from "@/app/(app)/incarichi/gestione-incarichi";
 import { Avviso } from "@/components/ui";
 import { richiediVisibilitaIncarichi } from "@/lib/auth";
-import {
-  isSupervisore,
-  puoPianificare,
-  puoVedereTuttiGliIncarichi,
-} from "@/lib/dominio";
+import { puoPianificare, puoVedereTuttiGliIncarichi } from "@/lib/dominio";
 import { messaggioErrore } from "@/lib/errori";
 import { createClient } from "@/lib/supabase/server";
 
@@ -64,7 +60,9 @@ export default async function PaginaIncarichi() {
       clienti={clienti}
       tecnici={tecnici}
       puoGestire={puoPianificare(profilo)}
-      puoSegnare={!isSupervisore(profilo)}
+      // La spunta è solo del tecnico: il pianificatore pianifica, non
+      // dichiara fatto il lavoro altrui.
+      puoSegnare={profilo.ruolo === "tecnico"}
     />
   );
 }

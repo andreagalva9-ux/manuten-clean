@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { richiediPianificazione, richiediProfilo } from "@/lib/auth";
-import { isTipoCommessa, oggiISO, puoPianificare } from "@/lib/dominio";
+import { isTipoCommessa, oggiISO } from "@/lib/dominio";
 import { inviaEmail } from "@/lib/email/invio";
 import { templateNuovoIncarico } from "@/lib/email/template";
 import { messaggioErrore } from "@/lib/errori";
@@ -129,9 +129,12 @@ export async function eliminaIncarico(
 }
 
 /**
- * Il tecnico spunta il proprio incarico come fatto: l'RLS e il trigger sul
- * database impediscono comunque di toccare cliente, tecnico, tipo o
- * scadenza se non si è il pianificatore.
+ * Il tecnico spunta come fatto un proprio incarico che non prevede foglio
+ * di lavoro. Quando il foglio c'è, non serve: un trigger sul database
+ * chiude l'incarico da solo nel momento dell'invio definitivo.
+ *
+ * Il percorso inverso non esiste per nessuno: un incarico completato non si
+ * riapre. Se era sbagliato, il pianificatore lo elimina e ne crea uno nuovo.
  */
 export async function segnaIncarico(
   _stato: StatoIncarico,
@@ -139,27 +142,26 @@ export async function segnaIncarico(
 ): Promise<StatoIncarico> {
   const profilo = await richiediProfilo();
   const id = String(formData.get("id") ?? "");
-  const completato = String(formData.get("completato") ?? "") === "true";
   if (!id) return { errore: "Incarico non identificato." };
 
-  // Segnare come fatto spetta anche al tecnico; riaprire no, come per la
-  // riapertura di un foglio già inviato definitivamente.
-  if (!completato && !puoPianificare(profilo)) {
+  if (profilo.ruolo !== "tecnico") {
     return {
-      errore:
-        "Un incarico già completato può essere riaperto solo dal pianificatore.",
+      errore: "Solo il tecnico assegnato può segnare un incarico come fatto.",
     };
   }
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("incarichi")
-    .update({ completato_at: completato ? new Date().toISOString() : null })
-    .eq("id", id);
+    .update({ completato_at: new Date().toISOString() })
+    .eq("id", id)
+    // Se qualcuno lo ha già chiuso nel frattempo, non lo si ridata per fatto
+    // con una data diversa: la chiusura vale una volta sola.
+    .is("completato_at", null);
 
   if (error) return { errore: messaggioErrore(error) };
 
   revalidatePath("/incarichi");
   revalidatePath("/panoramica");
-  return { successo: completato ? "Segnato come fatto." : "Riaperto." };
+  return { successo: "Segnato come fatto." };
 }
